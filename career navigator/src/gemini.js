@@ -2,8 +2,8 @@
 
 import { store } from './store.js';
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-const GEMINI_STREAM_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
+const GEMINI_STREAM_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:streamGenerateContent';
 
 function buildSystemPrompt(profile) {
   if (!profile) {
@@ -48,10 +48,7 @@ export const gemini = {
       system_instruction: { parts: [{ text: systemPrompt }] },
       contents,
       generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 1024,
-        topK: 40,
-        topP: 0.95
+        maxOutputTokens: 1024
       },
       safetySettings: [
         { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
@@ -61,10 +58,10 @@ export const gemini = {
 
     if (onToken) {
       // Streaming mode
-      const url = `${GEMINI_STREAM_URL}?key=${apiKey}&alt=sse`;
+      const url = `${GEMINI_STREAM_URL}?alt=sse`;
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify(body)
       });
 
@@ -98,7 +95,7 @@ export const gemini = {
       return fullText;
     } else {
       // Non-streaming mode
-      const url = `${GEMINI_API_URL}?key=${apiKey}`;
+      const url = GEMINI_API_URL;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,7 +125,7 @@ export const gemini = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.8, maxOutputTokens: 200 }
+          generationConfig: { maxOutputTokens: 200 }
         })
       });
 
