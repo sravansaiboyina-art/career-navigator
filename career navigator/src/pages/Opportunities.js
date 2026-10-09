@@ -57,7 +57,9 @@ function getRelevantOpportunities(opportunities, profile) {
 
 function renderOppCards(opportunities, profile) {
   const progress = store.getProgress();
-  let list = activeType === 'all' ? opportunities : activeType === 'saved' ? opportunities.filter(o => progress.savedOpportunities.includes(o.id)) : opportunities.filter(o => o.type === activeType);
+  const allOpportunities = Array.isArray(window.__opportunities) ? window.__opportunities : opportunities;
+  // Saved items remain accessible even after the student changes their target career or stage.
+  let list = activeType === 'all' ? opportunities : activeType === 'saved' ? allOpportunities.filter(o => progress.savedOpportunities.includes(o.id)) : opportunities.filter(o => o.type === activeType);
 
   if (list.length === 0) {
     return `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">🔍</div><h3>No opportunities in this category</h3></div>`;
@@ -112,7 +114,7 @@ function renderOppCards(opportunities, profile) {
           ${o.deadline?.note ? `<div class="text-xs text-muted mt-1" style="max-width:180px;">${escapeHtml(o.deadline.note)}</div>` : ''}
         </div>
         <div class="flex gap-2 items-center">
-          <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="window.toggleSaveOpp('${escapeHtml(o.id)}',this)" title="${isSaved ? 'Saved' : 'Save'}">
+          <button type="button" class="save-btn ${isSaved ? 'saved' : ''}" aria-label="${isSaved ? 'Remove from saved' : 'Save opportunity'}" aria-pressed="${isSaved}" onclick="window.toggleSaveOpp('${escapeHtml(o.id)}',this)" title="${isSaved ? 'Saved' : 'Save'}">
             ${isSaved
         ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`
         : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`}
@@ -154,7 +156,10 @@ window.setOppType = (type) => {
 window.toggleSaveOpp = (id, btn) => {
   store.toggleSavedOpportunity(id);
   const isSaved = store.isOpportunitySaved(id);
+  if (!btn) return;
   btn.classList.toggle('saved', isSaved);
+  btn.setAttribute('aria-pressed', String(isSaved));
+  btn.setAttribute('aria-label', isSaved ? 'Remove from saved' : 'Save opportunity');
   btn.innerHTML = isSaved
     ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`
     : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
