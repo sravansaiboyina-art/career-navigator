@@ -5,6 +5,18 @@ export function renderLanding(careers = [], exams = [], opportunities = []) {
   const scholarshipCount = opportunities.filter((item) => item.type === 'scholarship').length;
   const featuredExams = ['neet-ug', 'jee-main', 'gate'].map((id) => exams.find((exam) => exam.id === id)).filter(Boolean);
   const featuredOpportunities = ['inspire-scholarship', 'google-step-internship', 'pm-yasasvi'].map((id) => opportunities.find((opportunity) => opportunity.id === id)).filter(Boolean);
+  const previewCards = [
+    ...featuredExams.slice(0, 2).map((exam) => ({
+      emoji: exam.emoji || '📅',
+      title: exam.title || 'Exam',
+      detail: `Expected period: ${exam.examMonth || 'Not announced'}`
+    })),
+    ...featuredOpportunities.slice(0, 1).map((opportunity) => ({
+      emoji: opportunity.emoji || '🎯',
+      title: opportunity.title || 'Opportunity',
+      detail: `Typical window: ${opportunity.deadline?.month || 'Not announced'}`
+    }))
+  ].slice(0, 3);
   return `
 <div class="hero-section hero-bg page-enter">
   <!-- Background Orbs -->
@@ -65,12 +77,12 @@ export function renderLanding(careers = [], exams = [], opportunities = []) {
               <div class="progress-bar"><div class="progress-fill" style="width:42%;"></div></div>
             </div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-top:1rem;">
-              ${featuredExams.length ? featuredExams.map((exam)=>`
+              ${previewCards.length ? previewCards.map((item)=>`
                 <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:0.5rem;padding:0.5rem;text-align:center;">
-                  <div style="font-size:1rem;">${escapeHtml(exam.emoji || '📅')}</div>
-                  <div class="fw-600" style="font-size:0.65rem;margin-top:2px;">${escapeHtml(exam.title)}</div>
-                  <div class="text-muted" style="font-size:0.6rem;">Expected: ${escapeHtml(exam.examMonth || 'TBA')}</div>
-                </div>`).join('') : '<p class="text-xs text-muted">Exam data will appear here.</p>'}
+                  <div style="font-size:1rem;">${escapeHtml(item.emoji)}</div>
+                  <div class="fw-600" style="font-size:0.65rem;margin-top:2px;">${escapeHtml(item.title)}</div>
+                  <div class="text-muted" style="font-size:0.6rem;">${escapeHtml(item.detail)}</div>
+                </div>`).join('') : '<p class="text-xs text-muted">Opportunity data will appear here.</p>'}
             </div>
           </div>
           <div style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);border-radius:0.75rem;padding:1rem;">
