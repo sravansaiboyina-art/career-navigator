@@ -70,27 +70,46 @@ export const gemini = {
         throw new Error(err.error?.message || `API error ${res.status}`);
       }
 
+      if (!res.body) throw new Error('Streaming is unavailable in this browser. Try again or disable streaming.');
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let fullText = '';
+      let buffer = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              const token = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-              if (token) {
-                fullText += token;
-                onToken(token, fullText);
-              }
-            } catch { /* skip malformed SSE */ }
+      const consumeEvent = (eventText) => {
+        const dataLines = eventText.split('\n')
+          .filter((line) => line.startsWith('data:'))
+          .map((line) => line.slice(5).trimStart());
+        if (!dataLines.length) return;
+        const payload = dataLines.join('\n').trim();
+        if (!payload || payload === '[DONE]') return;
+        try {
+          const data = JSON.parse(payload);
+          const token = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (token) {
+            fullText += token;
+            onToken(token, fullText);
           }
+          const blockReason = data.promptFeedback?.blockReason;
+          if (blockReason) throw new Error(`Gemini blocked this request (${blockReason}). Rephrase the question and try again.`);
+        } catch (error) {
+          if (error instanceof SyntaxError) return; // Ignore a malformed/keep-alive event.
+          throw error;
         }
+      };
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+          const events = buffer.split(/\r?\n\r?\n/);
+          buffer = events.pop() || '';
+          events.forEach(consumeEvent);
+          if (done) break;
+        }
+        if (buffer.trim()) consumeEvent(buffer);
+      } finally {
+        reader.releaseLock();
       }
       return fullText;
     } else {
@@ -98,7 +117,7 @@ export const gemini = {
       const url = GEMINI_API_URL;
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify(body)
       });
 
@@ -119,10 +138,10 @@ export const gemini = {
     try {
       const prompt = `Generate 4 short, specific career guidance questions for a ${store.getStageLabel(profile?.class || 'ug')} student interested in ${profile?.selectedCareer || 'career options'} in India. Each question should be under 12 words. Return ONLY a JSON array of 4 strings. No explanation.`;
 
-      const url = `${GEMINI_API_URL}?key=${apiKey}`;
+      const url = GEMINI_API_URL;
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: { maxOutputTokens: 200 }
