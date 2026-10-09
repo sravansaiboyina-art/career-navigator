@@ -1,0 +1,218 @@
+/* =============================================
+   Career Navigator — Animations
+   animations.css
+   ============================================= */
+
+/* ── Keyframes ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(20px); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes borderGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(124,58,237,0.3); }
+  50%       { box-shadow: 0 0 40px rgba(124,58,237,0.6); }
+}
+@keyframes checkmark {
+  from { stroke-dashoffset: 40; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(30px, -30px) scale(1.05); }
+  66%       { transform: translate(-20px, 20px) scale(0.95); }
+}
+@keyframes ripple {
+  from { transform: scale(0); opacity: 0.6; }
+  to   { transform: scale(4); opacity: 0; }
+}
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); }
+  30%            { transform: translateY(-6px); }
+}
+
+/* ── Animation Utility Classes ── */
+.animate-fade-up    { animation: fadeInUp 0.6s var(--ease) both; }
+.animate-fade-in    { animation: fadeIn 0.4s var(--ease) both; }
+.animate-scale-in   { animation: scaleIn 0.3s var(--ease) both; }
+.animate-slide-right { animation: slideInRight 0.5s var(--ease) both; }
+.animate-slide-left  { animation: slideInLeft 0.5s var(--ease) both; }
+.animate-float      { animation: float 4s ease-in-out infinite; }
+.animate-pulse      { animation: pulse 2s ease-in-out infinite; }
+.animate-spin       { animation: spin 1s linear infinite; }
+
+/* Stagger delays */
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+.delay-5 { animation-delay: 0.5s; }
+.delay-6 { animation-delay: 0.6s; }
+.delay-7 { animation-delay: 0.7s; }
+.delay-8 { animation-delay: 0.8s; }
+
+/* ── Scroll Reveal (JS-toggled) ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-left  { transform: translateX(-30px); }
+.reveal-right { transform: translateX(30px); }
+.reveal-left.visible, .reveal-right.visible { transform: translateX(0); }
+
+/* ── Hover Effects ── */
+.hover-lift {
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card);
+}
+.hover-glow:hover {
+  box-shadow: var(--shadow-glow);
+}
+.hover-scale:hover {
+  transform: scale(1.03);
+}
+
+/* ── Gradient Text Animated ── */
+.gradient-text-animated {
+  background: linear-gradient(135deg, #A855F7, #22D3EE, #A855F7);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* ── Animated Border ── */
+.border-animated {
+  animation: borderGlow 2s ease-in-out infinite;
+}
+
+/* ── Hero Orbs ── */
+.orb-animated {
+  animation: orbFloat 8s ease-in-out infinite;
+}
+.orb-animated-2 {
+  animation: orbFloat 10s ease-in-out infinite reverse;
+}
+
+/* ── Loading Spinner ── */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--violet);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.spinner-lg {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+}
+
+/* ── Typing Indicator ── */
+.typing-dots span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--violet-light);
+  border-radius: 50%;
+  margin: 0 2px;
+  animation: typing 1.2s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Page Transition ── */
+.page-enter {
+  animation: fadeInUp 0.4s var(--ease) both;
+}
+
+/* ── Checkbox Bounce ── */
+.checkbox-bounce {
+  transition: transform 0.15s var(--ease);
+}
+.checkbox-bounce:active {
+  transform: scale(0.85);
+}
+
+/* ── Ripple Effect ── */
+.ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+.ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(124,58,237,0.3);
+  animation: ripple 0.6s linear;
+  pointer-events: none;
+}
+
+/* ── Animated Background Hero ── */
+.hero-bg {
+  background: radial-gradient(ellipse at 20% 50%, rgba(124,58,237,0.15) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 20%, rgba(6,182,212,0.1) 0%, transparent 60%),
+              radial-gradient(ellipse at 60% 80%, rgba(236,72,153,0.08) 0%, transparent 60%),
+              var(--bg-primary);
+}
