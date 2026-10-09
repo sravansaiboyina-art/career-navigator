@@ -1,7 +1,7 @@
 // pages/AIAssistant.js
 import { store } from '../store.js';
 import { gemini } from '../gemini.js';
-import { showToast } from '../main.js';
+import { showToast } from '../components/Toast.js';
 
 let messages = [];
 let isLoading = false;
