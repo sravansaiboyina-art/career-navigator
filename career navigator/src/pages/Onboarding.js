@@ -1,7 +1,7 @@
 // pages/Onboarding.js
 import { store } from '../store.js';
 import { router } from '../router.js';
-import { showToast } from '../main.js';
+import { showToast } from '../components/Toast.js';
 import { escapeHtml } from '../utils/safeHtml.js';
 
 let currentStep = 1;
