@@ -24,7 +24,7 @@ export function renderRoadmap(careers) {
 
   // Determine student's current stage
   const currentStageId = mapClassToStage(profile?.class || '11');
-  if (!activeStageId) activeStageId = currentStageId;
+  activeStageId = currentStageId;
 
   // Build overall progress across all milestones
   const allRoadmapMilestones = careerData
@@ -486,6 +486,9 @@ window.toggleMilestone = (id) => {
 
   // Update progress numbers in stage nav
   _refreshStageNavProgress();
+  _refreshRoadmapProgressRing();
+  const timeline = document.getElementById('roadmap-full-timeline');
+  timeline?.querySelectorAll('.reveal').forEach((card) => card.classList.add('visible'));
 
   showToast(isComplete ? '✅ Milestone completed! Great work!' : '↩️ Milestone unmarked', isComplete ? 'success' : 'info');
 };
@@ -588,6 +591,7 @@ window.switchRoadmapCareer = (careerId) => {
   const fullTimeline = document.getElementById('roadmap-full-timeline');
   if (fullTimeline) {
     fullTimeline.innerHTML = renderFullTimeline(displayData, progress, currentStageId);
+    fullTimeline.querySelectorAll('.reveal').forEach((card) => card.classList.add('visible'));
   }
 
   // Update progress ring
@@ -689,4 +693,13 @@ function _refreshStageNavProgress() {
     if (fill) fill.style.width = pct + '%';
     if (count) count.textContent = `${done}/${mils.length}`;
   });
+}
+
+function _refreshRoadmapProgressRing() {
+  const displayData = _getCurrentDisplayData();
+  const allMilestones = Object.values(displayData.stages || {}).flatMap((stage) => stage?.milestones || []);
+  const completed = allMilestones.filter((milestone) => store.isMilestoneComplete(milestone.id)).length;
+  const pct = allMilestones.length ? Math.round((completed / allMilestones.length) * 100) : 0;
+  const ring = document.querySelector('.roadmap-ring-wrap');
+  if (ring) ring.outerHTML = renderProgressRing(pct, completed, allMilestones.length);
 }
