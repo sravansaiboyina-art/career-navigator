@@ -93,7 +93,7 @@ export function renderCareerDetail(career, exams) {
                   <div class="text-xs text-muted">${data.milestones?.length || 0} milestones</div>
                 </div>
               </div>`;
-            ${endToken}
+            }).join('')}
           </div>
         </div>
 
