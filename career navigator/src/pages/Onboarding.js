@@ -2,6 +2,7 @@
 import { store } from '../store.js';
 import { router } from '../router.js';
 import { showToast } from '../main.js';
+import { escapeHtml } from '../utils/safeHtml.js';
 
 let currentStep = 1;
 let formData = { name: '', class: '', stream: 'na', interests: [], selectedCareer: '' };
@@ -71,7 +72,7 @@ function renderStep1() {
 <div class="flex-col gap-4">
   <div class="form-group">
     <label class="form-label" for="ob-name">Your Name *</label>
-    <input id="ob-name" class="input" type="text" placeholder="e.g. Priya Sharma" value="${formData.name}" maxlength="50" />
+    <input id="ob-name" class="input" type="text" placeholder="e.g. Priya Sharma" value="${escapeHtml(formData.name)}" maxlength="50" />
   </div>
 
   <div class="form-group">
