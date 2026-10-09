@@ -37,6 +37,7 @@ export function renderOpportunityDetail(opportunity) {
             <div class="flex gap-2 flex-wrap mt-4">
               <span class="badge badge-violet">${escapeHtml(opportunity.type || 'Opportunity')}</span>
               <span class="badge badge-cyan">Typical window: ${escapeHtml(opportunity.deadline?.month || 'Not announced')}</span>
+              ${opportunity.status === 'legacy' ? '<span class="badge badge-amber">Legacy programme — current cycle unverified</span>' : ''}
             </div>
           </div>
         </div>
@@ -44,6 +45,7 @@ export function renderOpportunityDetail(opportunity) {
         <hr style="border-color:var(--border);margin:1.5rem 0;">
         <h4>About this opportunity</h4>
         <p class="text-sm mt-2" style="line-height:1.8;">${escapeHtml(opportunity.description || 'Information will be updated soon.')}</p>
+        ${opportunity.statusNote ? `<p class="text-xs text-muted mt-2">${escapeHtml(opportunity.statusNote)}</p>` : ''}
 
         <div class="card mt-6" style="background:var(--bg-glass);">
           <h4>Eligibility</h4>
@@ -62,7 +64,7 @@ export function renderOpportunityDetail(opportunity) {
           ${officialUrl ? `<a href="${escapeHtml(officialUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Official website ↗</a>` : ''}
           ${resourceLinks.join(' ')}
         </div>
-        ${opportunity.linkVerifiedDate ? `<p class="text-xs text-muted mt-3">Link last checked in dataset: ${escapeHtml(opportunity.linkVerifiedDate)}. Availability is not implied.</p>` : ''}
+        ${opportunity.linkVerifiedDate ? `<p class="text-xs text-muted mt-3">Dataset reference date: ${escapeHtml(opportunity.linkVerifiedDate)}. This is not a live availability check.</p>` : ''}
       </div>
     </div>
   </div>`;
