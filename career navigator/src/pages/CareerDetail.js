@@ -1,5 +1,6 @@
 // pages/CareerDetail.js
 import { store } from '../store.js';
+import { router } from '../router.js';
 import { showToast } from '../main.js';
 
 export function renderCareerDetail(career, exams) {
@@ -77,7 +78,7 @@ export function renderCareerDetail(career, exams) {
               <div class="timeline-stage ${stageClass}">
                 <div class="timeline-stage-header">
                   <span class="badge ${stageClass==='current'?'badge-violet':stageClass==='past'?'badge-green':'badge-cyan'}">
-                    ${stage === 'ug' ? 'Undergraduate' : stage === 'grad' ? 'Postgraduate' : 'Class '+stage}
+                    ${stage === 'ug' ? 'Undergraduate' : stage === 'grad' ? 'Graduate / Career' : 'Class '+stage}
                   </span>
                   ${stageClass==='current' ? '<span class="badge badge-amber animate-pulse">You are here</span>' : ''}
                 </div>
