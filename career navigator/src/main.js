@@ -124,7 +124,8 @@ function setupRoutes() {
 
   router.before((path) => {
     // If accessing protected routes without a student profile, redirect to auth or onboarding
-    if (protectedRoutes.some(r => path.startsWith(r)) && !store.hasProfile()) {
+    const isProtected = protectedRoutes.some((routePath) => path === routePath || path.startsWith(routePath + '/'));
+    if (isProtected && !store.hasProfile()) {
       showToast('Please log in or create a profile to access this section.', 'info');
       router.navigate('/auth', true);
       return false;
