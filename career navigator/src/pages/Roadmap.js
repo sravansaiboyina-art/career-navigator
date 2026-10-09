@@ -1,6 +1,6 @@
 // pages/Roadmap.js — Full Career Roadmap Module with Visual Timeline
 import { store } from '../store.js';
-import { showToast } from '../main.js';
+import { showToast } from '../components/Toast.js';
 import { CAREER_ROADMAPS, ROADMAP_STAGES, mapClassToStage } from '../data/roadmapData.js';
 import { escapeHtml } from '../utils/safeHtml.js';
 
