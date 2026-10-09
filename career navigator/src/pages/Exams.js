@@ -58,11 +58,11 @@ export function renderExams(exams) {
       <div class="page-header-inner">
         <div>
           <h2>📅 Exam Tracker</h2>
-          <p class="mt-2">Explore exams, review eligibility, and save exams you plan to take.</p>
-          <p class="text-xs text-muted mt-1">Application months are estimates. Always confirm dates on the official exam website.</p>
+          <p class="mt-2">Explore exams matched to your career and education stage, and save exams you plan to take.</p>
+          <p class="text-xs text-muted mt-1">Stage matching is not full eligibility: check age, subjects, marks, and official requirements. Application months are estimates.</p>
         </div>
         <div class="flex gap-3 items-center">
-          <span class="badge badge-violet">${myExams.length} eligible for your stage</span>
+          <span class="badge badge-violet">${myExams.length} stage matches</span>
           <span class="badge badge-cyan">${upcomingExams.length} future-stage</span>
         </div>
       </div>
@@ -164,7 +164,7 @@ function renderExamCard(exam, index) {
 
 function formatEligibility(eligibility = {}) {
   const minClass = eligibility.minClass;
-  const stage = minClass === 'ug' ? 'Graduation' : minClass === 'grad' ? 'Post-graduation'
+  const stage = minClass === 'ug' ? 'Undergraduate / final-year degree level (check exam rules)' : minClass === 'grad' ? 'Graduation degree completed'
     : minClass ? `Class ${minClass}` : 'Check official notification';
   const parts = [`Minimum stage: ${stage}`];
   if (eligibility.minAge) parts.push(`Minimum age: ${eligibility.minAge}`);
