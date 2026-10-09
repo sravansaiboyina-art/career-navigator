@@ -137,13 +137,19 @@ if (typeof window !== 'undefined') {
       el.classList.toggle('active', el.getAttribute('onclick')?.includes(`'${f}'`));
     });
     const grid = document.getElementById('careers-grid');
-    if (grid) grid.innerHTML = renderCareerCards(window.__careers || []);
+    if (grid) {
+      grid.innerHTML = renderCareerCards(window.__careers || []);
+      grid.querySelectorAll('.reveal').forEach((card) => card.classList.add('visible'));
+    }
   };
 
   window.filterCareers = () => {
     searchQuery = document.getElementById('career-search')?.value || '';
     const grid = document.getElementById('careers-grid');
-    if (grid) grid.innerHTML = renderCareerCards(window.__careers || []);
+    if (grid) {
+      grid.innerHTML = renderCareerCards(window.__careers || []);
+      grid.querySelectorAll('.reveal').forEach((card) => card.classList.add('visible'));
+    }
   };
 
   window.clearCareerFilters = () => {
