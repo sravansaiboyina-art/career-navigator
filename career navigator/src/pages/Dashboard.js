@@ -1,5 +1,6 @@
 // pages/Dashboard.js
 import { getCurrentStageAdvice } from '../utils/careerEngine.js';
+import { CAREER_ROADMAPS, mapClassToStage } from '../data/roadmapData.js';
 
 import { store } from '../store.js';
 
@@ -8,7 +9,9 @@ export function renderDashboard(careers, exams, opportunities) {
   const progress = store.getProgress();
   const career = careers.find(c => c.id === profile.selectedCareer) || careers[0];
   const currentAdvice = getCurrentStageAdvice(profile, career);
-  const stageData = career?.stages?.[profile.class] || career?.stages?.['ug'];
+  const roadmap = CAREER_ROADMAPS[profile?.selectedCareer];
+  const currentStageId = mapClassToStage(String(profile?.class || '11'));
+  const stageData = roadmap?.stages?.[currentStageId];
   const milestones = stageData?.milestones || [];
   const completed = milestones.filter(m => progress.completedMilestones.includes(m.id)).length;
   const pct = milestones.length ? Math.round((completed / milestones.length) * 100) : 0;
@@ -224,7 +227,9 @@ window.toggleMilestoneFromDash = (id, el) => {
   const progress = store.getProgress();
   const careers = window.__careers || [];
   const career = careers.find(c => c.id === profile?.selectedCareer) || careers[0];
-  const stageData = career?.stages?.[profile?.class] || career?.stages?.['ug'];
+  const roadmap = CAREER_ROADMAPS[profile?.selectedCareer];
+  const stageId = mapClassToStage(String(profile?.class || '11'));
+  const stageData = roadmap?.stages?.[stageId];
   const milestones = stageData?.milestones || [];
   const completed = milestones.filter(m => progress.completedMilestones.includes(m.id)).length;
   const pct = milestones.length ? Math.round((completed / milestones.length) * 100) : 0;
