@@ -34,7 +34,7 @@ export function renderCareerDetail(career, exams) {
         <div>
           <div style="font-size:3.5rem;line-height:1;margin-bottom:1rem;">${career.emoji}</div>
           <h1 style="font-size:2rem;margin-bottom:0.5rem;">${career.title}</h1>
-          <p style="font-size:1rem;color:rgba(255,255,255,0.8);max-width:560px;">${career.tagline}</p>
+          <p style="font-size:1rem;color:rgba(255,255,255,0.8);max-width:560px;">${escapeHtml(career.tagline || '')}</p>
           <div class="flex gap-3 flex-wrap mt-4">
             ${(career.tags||[]).slice(0,5).map(t => `<span class="badge badge-violet">${t}</span>`).join('')}
           </div>
@@ -54,7 +54,7 @@ export function renderCareerDetail(career, exams) {
         <!-- About -->
         <div class="card mb-6 reveal">
           <h4 class="mb-3">About This Career</h4>
-          <p class="text-sm" style="line-height:1.8;">${career.description}</p>
+          <p class="text-sm" style="line-height:1.8;">${escapeHtml(career.description || '')}</p>
           <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-top:1.5rem;">
             <div style="background:var(--bg-glass);border-radius:var(--radius-lg);padding:1rem;">
               <div class="text-xs text-muted mb-1">Average Salary</div>
@@ -62,7 +62,7 @@ export function renderCareerDetail(career, exams) {
             </div>
             <div style="background:var(--bg-glass);border-radius:var(--radius-lg);padding:1rem;">
               <div class="text-xs text-muted mb-1">Eligible From</div>
-              <div class="fw-700" style="font-size:0.875rem;">Class ${career.eligibleFromClass}+</div>
+              <div class="fw-700" style="font-size:0.875rem;">Class ${escapeHtml(career.eligibleFromClass || '')}+</div>
             </div>
           </div>
         </div>
@@ -101,7 +101,7 @@ export function renderCareerDetail(career, exams) {
         <div class="card reveal">
           <h4 class="mb-4">🏫 Top Institutions</h4>
           <div class="flex flex-wrap gap-2">
-            ${(career.topColleges||[]).map(c => `<span class="tag">${c}</span>`).join('')}
+            ${(career.topColleges||[]).map(c => `<span class="tag">${escapeHtml(c)}</span>`).join('')}
           </div>
         </div>
       </div>
@@ -115,13 +115,13 @@ export function renderCareerDetail(career, exams) {
             : careerExams.map(e => `
             <div class="mb-3 p-3" style="background:var(--bg-glass);border:1px solid var(--border);border-radius:var(--radius-lg);">
               <div class="flex items-center gap-2 mb-1">
-                <span style="font-size:1rem;">${e.emoji}</span>
-                <div class="fw-700 font-heading" style="font-size:0.85rem;">${e.title}</div>
+                <span style="font-size:1rem;">${escapeHtml(e.emoji || '📝')}</span>
+                <div class="fw-700 font-heading" style="font-size:0.85rem;">${escapeHtml(e.title || 'Exam')}</div>
               </div>
-              <div class="text-xs text-muted">${e.examMonth}</div>
+              <div class="text-xs text-muted">${escapeHtml(e.examMonth || 'Not announced')}</div>
               <div class="flex gap-2 mt-2">
-                <span class="badge badge-violet" style="font-size:0.6rem;">${e.difficulty}</span>
-                <span class="badge badge-cyan" style="font-size:0.6rem;">${e.frequency}</span>
+                <span class="badge badge-violet" style="font-size:0.6rem;">${escapeHtml(e.difficulty || 'Not specified')}</span>
+                <span class="badge badge-cyan" style="font-size:0.6rem;">${escapeHtml(e.frequency || 'Not specified')}</span>
               </div>
               ${safeHttpUrl(e.officialLink) ? `<a href="${escapeHtml(safeHttpUrl(e.officialLink))}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm w-full mt-2" style="justify-content:center;font-size:0.75rem;">Official Site ↗</a>` : ''}
             </div>`).join('')}
