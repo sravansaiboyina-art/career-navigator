@@ -26,7 +26,14 @@ const INTERESTS = [
 
 export function renderOnboarding() {
   currentStep = 1;
-  formData = { name: '', class: '', stream: 'na', interests: [], selectedCareer: '' };
+  const existingProfile = store.getProfile() || {};
+  formData = {
+    name: existingProfile.name || '',
+    class: existingProfile.class || '',
+    stream: existingProfile.stream || 'na',
+    interests: Array.isArray(existingProfile.interests) ? [...existingProfile.interests] : [],
+    selectedCareer: existingProfile.selectedCareer || ''
+  };
   return `<div class="onboarding-container page-enter" id="onboarding-root">${renderStep()}</div>`;
 }
 
@@ -73,7 +80,7 @@ function renderStep1() {
       <option value="">Select your class...</option>
       ${['6','7','8','9','10','11','12'].map(c => `<option value="${c}" ${formData.class===c?'selected':''}>Class ${c}</option>`).join('')}
       <option value="ug" ${formData.class==='ug'?'selected':''}>Undergraduate (UG)</option>
-      <option value="grad" ${formData.class==='grad'?'selected':''}>Postgraduate (PG / Graduate)</option>
+      <option value="grad" ${formData.class==='grad'?'selected':''}>Graduate (degree completed)</option>
     </select>
   </div>
 
