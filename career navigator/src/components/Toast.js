@@ -15,9 +15,15 @@ export function showToast(message, type = 'info', duration = 3500) {
     warning: '⚠️',
   };
 
+  const allowedTypes = new Set(['success', 'error', 'info', 'warning']);
   const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `<span>${icons[type] || '💬'}</span><span>${message}</span>`;
+  toast.className = `toast ${allowedTypes.has(type) ? type : 'info'}`;
+
+  const iconEl = document.createElement('span');
+  iconEl.textContent = icons[type] || '💬';
+  const messageEl = document.createElement('span');
+  messageEl.textContent = String(message ?? '');
+  toast.append(iconEl, messageEl);
   container.appendChild(toast);
 
   setTimeout(() => {
