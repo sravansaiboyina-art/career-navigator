@@ -226,7 +226,7 @@ if (typeof window !== 'undefined') {
                 <option value="${c}" ${profile.class === c ? 'selected' : ''}>Class ${c}</option>
               `).join('')}
               <option value="ug" ${profile.class === 'ug' ? 'selected' : ''}>Undergraduate (UG)</option>
-              <option value="grad" ${profile.class === 'grad' ? 'selected' : ''}>Postgraduate (PG)</option>
+              <option value="grad" ${profile.class === 'grad' ? 'selected' : ''}>Graduate (degree completed)</option>
             </select>
           </div>
 
