@@ -138,7 +138,7 @@ function setupRoutes() {
       router.navigate('/dashboard', true);
       return;
     }
-    setPage(renderLanding(), '/');
+    setPage(renderLanding(careers, exams, opportunities), '/');
   });
 
   // Auth routes (Login & Signup)
