@@ -171,22 +171,28 @@ test('internal navigation targets resolve to explicitly registered route familie
   const main = read('src/main.js');
   const files = walk(path.join(root, 'src')).filter((file) => file.endsWith('.js'));
   const source = files.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
-  const routes = [...main.matchAll(/router\.register\\(['"]([^'"]+)['"]/g)].map((match) => match[1]);
-  const targets = [...source.matchAll(/window\.navigateTo\\(['"]([^'"]+)['"]\\)/g)].map((match) => match[1]);
+  const routes = [...main.matchAll(/router[.]register[(]['"]([^'"]+)['"]/g)].map((match) => match[1]);
+  const targets = [...source.matchAll(/window[.]navigateTo[(]['"]([^'"]+)['"][)]/g)].map((match) => match[1]);
   const missing = [];
 
   for (const target of targets) {
-    if (!target || target.includes('${')) continue;
+    if (!target) continue;
     const rawPath = target.split('?')[0];
-    const pathOnly = rawPath.includes('${') ? rawPath.slice(0, rawPath.indexOf('${')).replace(/\\/$/, '') : rawPath;
+    let pathOnly = rawPath;
+    const interpolationIndex = pathOnly.indexOf('\${');
+    if (interpolationIndex >= 0) {
+      pathOnly = pathOnly.slice(0, interpolationIndex);
+      if (pathOnly.endsWith('/')) pathOnly = pathOnly.slice(0, -1);
+    }
     const matched = routes.some((route) =>
-      route === pathOnly || pathOnly.startsWith(route === '/' ? '\\u0000' : route + '/') ||
+      route === pathOnly ||
+      (route !== '/' && route !== '*' && pathOnly.startsWith(route + '/')) ||
       (route === '*' && pathOnly.length > 0)
     );
     if (!matched) missing.push(target);
   }
 
-  assert.deepEqual([...new Set(missing)], [], `Unregistered navigation targets: ${missing.join(', ')}`);
+  assert.deepEqual([...new Set(missing)], [], \`Unregistered navigation targets: \${missing.join(', ')}\`);
 });
 
 test('page modules do not import shared toast utilities back through the app entry point', () => {
