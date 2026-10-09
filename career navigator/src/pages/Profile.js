@@ -4,6 +4,7 @@ import { db, COLLECTIONS } from '../db/index.js';
 import { Modal } from '../components/Modal.js';
 import { showToast } from '../components/Toast.js';
 import { router } from '../router.js';
+import { escapeHtml } from '../utils/safeHtml.js';
 
 export function renderProfile(careers = []) {
   const profile = store.getProfile();
@@ -27,7 +28,7 @@ export function renderProfile(careers = []) {
   };
 
   const stageLabel = store.getStageLabel(profile.class);
-  const initials = profile.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const initials = String(profile.name || 'Student').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   const completedCount = (progress.completedMilestones || []).length;
   const savedCount = (progress.savedOpportunities || []).length;
   const badges = profile.badges || ['Curious Explorer', 'Stage Navigator'];
@@ -46,20 +47,20 @@ export function renderProfile(careers = []) {
           
           <div style="flex: 1; min-width: 250px;">
             <div class="flex items-center gap-3 flex-wrap">
-              <h2 style="margin: 0; font-size: 1.85rem;">${profile.name}</h2>
-              <span class="badge badge-violet">📚 ${stageLabel}</span>
-              ${profile.stream && profile.stream !== 'na' ? `<span class="badge badge-cyan">${profile.stream.toUpperCase()} Stream</span>` : ''}
+              <h2 style="margin: 0; font-size: 1.85rem;">${escapeHtml(profile.name || 'Student')}</h2>
+              <span class="badge badge-violet">📚 ${escapeHtml(stageLabel)}</span>
+              ${profile.stream && profile.stream !== 'na' ? `<span class="badge badge-cyan">${escapeHtml(profile.stream.toUpperCase())} Stream</span>` : ''}
               <span class="badge badge-amber">${career.emoji} ${career.title}</span>
             </div>
 
             <p class="text-muted text-sm mt-2 mb-3" style="max-width: 600px;">
-              ${profile.bio || 'Navigating academic milestones and career preparation with personalized roadmaps.'}
+              ${escapeHtml(profile.bio || 'Navigating academic milestones and career preparation with personalized roadmaps.')}
             </p>
 
             <div class="flex items-center gap-4 text-xs text-muted flex-wrap">
-              <span>📧 ${user?.email || 'student@career-navigator.in'}</span>
-              <span>🏫 ${profile.school || 'Secondary Education'}</span>
-              <span>📍 ${profile.city || 'India'}</span>
+              <span>📧 ${escapeHtml(user?.email || 'student@career-navigator.in')}</span>
+              <span>🏫 ${escapeHtml(profile.school || 'Secondary Education')}</span>
+              <span>📍 ${escapeHtml(profile.city || 'India')}</span>
             </div>
           </div>
 
@@ -88,7 +89,7 @@ export function renderProfile(careers = []) {
         </div>
         <div class="stat-box">
           <div class="stat-icon">⏱️</div>
-          <div class="stat-value">${profile.studyHours || '4-6h'}</div>
+          <div class="stat-value">${escapeHtml(profile.studyHours || '4-6h')}</div>
           <div class="stat-label">Daily Study Target</div>
         </div>
         <div class="stat-box">
@@ -112,17 +113,17 @@ export function renderProfile(careers = []) {
             <div class="grid-2 gap-4">
               <div class="p-3 border border-border rounded-xl" style="background:var(--bg-glass);">
                 <div class="text-xs text-muted">Primary Target Exam</div>
-                <div class="fw-700 text-sm mt-1">${profile.targetExam || 'NEET / JEE / Civil Services'}</div>
+                <div class="fw-700 text-sm mt-1">${escapeHtml(profile.targetExam || 'NEET / JEE / Civil Services')}</div>
               </div>
 
               <div class="p-3 border border-border rounded-xl" style="background:var(--bg-glass);">
                 <div class="text-xs text-muted">Target Exam Year</div>
-                <div class="fw-700 text-sm mt-1">${profile.targetYear || '2027'}</div>
+                <div class="fw-700 text-sm mt-1">${escapeHtml(profile.targetYear || '2027')}</div>
               </div>
 
               <div class="p-3 border border-border rounded-xl" style="background:var(--bg-glass);">
                 <div class="text-xs text-muted">Current Academic Stage</div>
-                <div class="fw-700 text-sm mt-1">${stageLabel}</div>
+                <div class="fw-700 text-sm mt-1">${escapeHtml(stageLabel)}</div>
               </div>
 
               <div class="p-3 border border-border rounded-xl" style="background:var(--bg-glass);">
@@ -148,7 +149,7 @@ export function renderProfile(careers = []) {
             <div class="flex flex-wrap gap-2">
               ${(profile.interests || ['science', 'problem-solving', 'technology']).map(interest => `
                 <span class="interest-pill">
-                  ✨ ${interest.charAt(0).toUpperCase() + interest.slice(1)}
+                  ✨ ${escapeHtml(interest.charAt(0).toUpperCase() + interest.slice(1))}
                 </span>
               `).join('')}
             </div>
@@ -164,7 +165,7 @@ export function renderProfile(careers = []) {
               ${badges.map(b => `
                 <div class="badge-item">
                   <div class="badge-item-icon">🎖️</div>
-                  <div class="badge-item-name">${b}</div>
+                  <div class="badge-item-name">${escapeHtml(b)}</div>
                   <div class="badge-item-desc">Phase 1 Milestone</div>
                 </div>
               `).join('')}
@@ -215,7 +216,7 @@ if (typeof window !== 'undefined') {
       <form id="edit-profile-form" class="flex-col gap-3">
         <div class="form-group">
           <label class="form-label" for="edit-name">Student Name</label>
-          <input id="edit-name" class="input" type="text" value="${profile.name || ''}" required />
+          <input id="edit-name" class="input" type="text" value="${escapeHtml(profile.name || '')}" required />
         </div>
 
         <div class="grid-2 gap-3">
@@ -253,30 +254,30 @@ if (typeof window !== 'undefined') {
         <div class="grid-2 gap-3">
           <div class="form-group">
             <label class="form-label" for="edit-exam">Target Exam</label>
-            <input id="edit-exam" class="input" type="text" value="${profile.targetExam || ''}" placeholder="e.g. NEET UG 2027" />
+            <input id="edit-exam" class="input" type="text" value="${escapeHtml(profile.targetExam || '')}" placeholder="e.g. NEET UG 2027" />
           </div>
 
           <div class="form-group">
             <label class="form-label" for="edit-year">Target Year</label>
-            <input id="edit-year" class="input" type="text" value="${profile.targetYear || '2027'}" />
+            <input id="edit-year" class="input" type="text" value="${escapeHtml(profile.targetYear || '2027')}" />
           </div>
         </div>
 
         <div class="grid-2 gap-3">
           <div class="form-group">
             <label class="form-label" for="edit-school">School / College</label>
-            <input id="edit-school" class="input" type="text" value="${profile.school || ''}" />
+            <input id="edit-school" class="input" type="text" value="${escapeHtml(profile.school || '')}" />
           </div>
 
           <div class="form-group">
             <label class="form-label" for="edit-city">City</label>
-            <input id="edit-city" class="input" type="text" value="${profile.city || ''}" />
+            <input id="edit-city" class="input" type="text" value="${escapeHtml(profile.city || '')}" />
           </div>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="edit-bio">Bio / Study Goals</label>
-          <textarea id="edit-bio" class="input" rows="2">${profile.bio || ''}</textarea>
+          <textarea id="edit-bio" class="input" rows="2">${escapeHtml(profile.bio || '')}</textarea>
         </div>
       </form>
     `;
