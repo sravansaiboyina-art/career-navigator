@@ -2,6 +2,7 @@
 import { store } from '../store.js';
 import { showToast } from '../main.js';
 import { CAREER_ROADMAPS, ROADMAP_STAGES, mapClassToStage } from '../data/roadmapData.js';
+import { escapeHtml } from '../utils/safeHtml.js';
 
 // ── State ──────────────────────────────────────────────────────
 let activeCareer = null;
@@ -374,7 +375,7 @@ function renderStageDetail(stageId, displayData, progress, currentStageId) {
                     <span class="badge ${m.priority === 'high' ? 'badge-red' : m.priority === 'medium' ? 'badge-amber' : 'badge-green'}" style="font-size:0.65rem;">${m.priority} priority</span>
                     <span class="text-xs text-muted">~${m.weeks} weeks</span>
                   </div>
-                  ${note ? `<div class="milestone-note-chip">📝 ${note}</div>` : ''}
+                  ${note ? `<div class="milestone-note-chip">📝 ${escapeHtml(note)}</div>` : ''}
                 </div>
                 <button class="btn btn-ghost btn-sm milestone-note-btn"
                         onclick="event.stopPropagation(); window.addNote('${m.id}', '${m.title.replace(/'/g, '\\\'').replace(/"/g, '&quot;')}')"
