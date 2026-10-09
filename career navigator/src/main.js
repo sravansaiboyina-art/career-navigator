@@ -24,7 +24,7 @@ import { renderCareerDetail } from './pages/CareerDetail.js';
 import { renderRoadmap } from './pages/Roadmap.js';
 import { renderExams } from './pages/Exams.js';
 import { renderOpportunities } from './pages/Opportunities.js';
-import { renderProgress, initProgressChart } from './pages/Progress.js';
+import { renderProgress, initProgressChart, getProgressStageData } from './pages/Progress.js';
 import { renderAIAssistant } from './pages/AIAssistant.js';
 import { renderOpportunityDetail } from './pages/OpportunityDetail.js';
 
@@ -197,19 +197,7 @@ function setupRoutes() {
 
   // Progress Tracker
   router.register('/progress', () => {
-    const profile = store.getProfile();
-    const career = careers.find(c => c.id === profile?.selectedCareer) || careers[0];
-    const progress = store.getProgress();
-    const stageData = Object.entries(career?.stages || {}).map(([stage, data]) => {
-      const milestones = data.milestones || [];
-      const completed = milestones.filter(m => progress.completedMilestones.includes(m.id)).length;
-      return {
-        stage,
-        label: stage === 'ug' ? 'UG' : stage === 'grad' ? 'PG' : `Cl.${stage}`,
-        total: milestones.length,
-        completed
-      };
-    });
+    const stageData = getProgressStageData(careers);
     setPage(renderProgress(careers), '/progress');
     setTimeout(() => initProgressChart(stageData), 100);
   });
