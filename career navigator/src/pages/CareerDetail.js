@@ -123,7 +123,7 @@ export function renderCareerDetail(career, exams) {
                 <span class="badge badge-violet" style="font-size:0.6rem;">${e.difficulty}</span>
                 <span class="badge badge-cyan" style="font-size:0.6rem;">${e.frequency}</span>
               </div>
-              <a ${safeHttpUrl(e.officialLink) ? `<a href="${escapeHtml(safeHttpUrl(e.officialLink))}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm w-full mt-2" style="justify-content:center;font-size:0.75rem;">Official Site ↗</a>` : ''}
+              ${safeHttpUrl(e.officialLink) ? `<a href="${escapeHtml(safeHttpUrl(e.officialLink))}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm w-full mt-2" style="justify-content:center;font-size:0.75rem;">Official Site ↗</a>` : ''}
             </div>`).join('')}
         </div>
 
