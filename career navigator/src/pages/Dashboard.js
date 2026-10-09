@@ -19,7 +19,7 @@ export function renderDashboard(careers, exams, opportunities) {
 
 
 
-  // Upcoming exams (relevant + eligible)
+  // Show exams matched to the student's current education stage; this is not a complete eligibility check.
   const myExams = exams.filter(e =>
     (e.career || []).includes(profile.selectedCareer) &&
     store.isStageEligible(profile.class, e.eligibility?.minClass || '6')
@@ -167,8 +167,11 @@ export function renderDashboard(careers, exams, opportunities) {
       <!-- Upcoming Exams -->
       <div class="card reveal delay-1">
         <div class="flex items-center justify-between mb-4">
-          <h4>📅 Upcoming Exams</h4>
+          <h4>📅 Exam suggestions</h4>
           <button class="btn btn-ghost btn-sm" onclick="window.navigateTo('/exams')">View all →</button>
+        </div>
+        <p class="text-xs text-muted mb-4">Matched by career and education stage only. Confirm age, subjects, marks, and current rules on the official portal.</p>
+        <div>
         </div>
         ${myExams.length === 0
       ? `<div class="empty-state" style="padding:1.5rem;"><div class="empty-icon">📚</div><p>No exams for your current stage yet.</p></div>`
