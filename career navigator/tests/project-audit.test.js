@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -46,7 +45,7 @@ test('dataset identifiers and career references are valid', () => {
   }
 });
 
-test('legacy exam information is clearly labelled instead of implying current availability', () => {
+test('legacy exam and opportunity records are clearly labelled instead of implying current availability', () => {
   const exams = parseJson('data/exams.json');
   for (const exam of exams.filter((item) => item.status === 'legacy')) {
     assert.ok(exam.statusNote, `${exam.id} must explain its legacy status`);
@@ -54,6 +53,12 @@ test('legacy exam information is clearly labelled instead of implying current av
   }
   assert.equal(exams.find((exam) => exam.id === 'gate')?.officialLink, 'https://gate2027.iitm.ac.in');
   assert.equal(exams.find((exam) => exam.id === 'ssc-cgl')?.officialLink, 'https://ssc.gov.in');
+
+  const opportunities = parseJson('data/opportunities.json');
+  const legacyNtse = opportunities.find((item) => item.id === 'ntse-scholarship');
+  assert.equal(legacyNtse?.status, 'legacy');
+  assert.ok(legacyNtse?.statusNote);
+  assert.match(legacyNtse?.deadline?.month || '', /no current window/i);
 });
 
 test('demo progress references milestones in the canonical roadmap dataset', async () => {
@@ -127,4 +132,37 @@ test('auth session storage strips passwords and normalizes progress safely', asy
   assert.deepEqual(progress.savedOpportunities, []);
   assert.deepEqual(progress.trackedExams, []);
   assert.deepEqual(progress.notes, {});
+});
+
+test('public landing claims are derived from loaded data and avoid fabricated trust figures', () => {
+  const landing = read('src/pages/Landing.js');
+  const main = read('src/main.js');
+  assert.match(landing, /renderLanding\(careers = \[\], exams = \[\], opportunities = \[\]\)/);
+  assert.match(main, /renderLanding\(careers, exams, opportunities\)/);
+  assert.ok(!landing.includes('Trusted by 10,000+ students'));
+  assert.ok(!landing.includes('30+'));
+  assert.ok(!landing.includes('20+'));
+});
+
+test('Gemini client uses a current model and never puts the API key in request URLs', () => {
+  const gemini = read('src/gemini.js');
+  assert.ok(gemini.includes('gemini-3.8-flash'));
+  assert.ok(!gemini.includes('gemini-2.0-flash'));
+  assert.ok(!gemini.includes('?key='));
+  assert.ok(gemini.includes("'x-goog-api-key': apiKey"));
+  assert.ok(!gemini.includes('topK:'));
+  assert.ok(!gemini.includes('topP:'));
+  assert.ok(!gemini.includes('temperature:'));
+});
+
+test('router registers all intended application routes and guards protected routes', () => {
+  const main = read('src/main.js');
+  for (const route of [
+    "'/'", "'/auth'", "'/login'", "'/signup'", "'/onboarding'", "'/profile'",
+    "'/dashboard'", "'/explore'", "'/career'", "'/roadmap'", "'/exams'",
+    "'/opportunities'", "'/opportunity'", "'/progress'", "'/assistant'", "'*'"
+  ]) {
+    assert.ok(main.includes(`router.register(${route}`), `Missing route registration for ${route}`);
+  }
+  assert.ok(main.includes("path === routePath || path.startsWith(routePath + '/')"));
 });
