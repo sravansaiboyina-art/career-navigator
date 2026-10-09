@@ -1,0 +1,130 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, '..');
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
+const parseJson = (relativePath) => JSON.parse(read(relativePath));
+
+function walk(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = path.join(directory, entry.name);
+    return entry.isDirectory() ? walk(fullPath) : [fullPath];
+  });
+}
+
+test('source data and public runtime data stay identical and parse cleanly', () => {
+  for (const name of ['careers', 'exams', 'opportunities']) {
+    const source = parseJson(`data/${name}.json`);
+    const publicData = parseJson(`public/data/${name}.json`);
+    assert.deepEqual(publicData, source, `${name}.json must match the copy served by Vite`);
+  }
+});
+
+test('dataset identifiers and career references are valid', () => {
+  const careers = parseJson('data/careers.json');
+  const exams = parseJson('data/exams.json');
+  const opportunities = parseJson('data/opportunities.json');
+  const unique = (items, label) => {
+    const ids = items.map((item) => item.id);
+    assert.equal(new Set(ids).size, ids.length, `${label} IDs must be unique`);
+    assert.ok(ids.every(Boolean), `${label} IDs must be present`);
+  };
+  unique(careers, 'Career');
+  unique(exams, 'Exam');
+  unique(opportunities, 'Opportunity');
+  const careerIds = new Set(careers.map((career) => career.id));
+  for (const item of [...exams, ...opportunities]) {
+    for (const careerId of item.career || []) {
+      assert.ok(careerIds.has(careerId), `${item.id} points to unknown career ${careerId}`);
+    }
+    assert.match(item.officialLink || '', /^https?:\/\//i, `${item.id} needs an official HTTP(S) URL`);
+  }
+});
+
+test('legacy exam information is clearly labelled instead of implying current availability', () => {
+  const exams = parseJson('data/exams.json');
+  for (const exam of exams.filter((item) => item.status === 'legacy')) {
+    assert.ok(exam.statusNote, `${exam.id} must explain its legacy status`);
+    assert.match(exam.applicationWindow?.approxMonth || '', /no current|not applicable|discontinued/i);
+  }
+  assert.equal(exams.find((exam) => exam.id === 'gate')?.officialLink, 'https://gate2027.iitm.ac.in');
+  assert.equal(exams.find((exam) => exam.id === 'ssc-cgl')?.officialLink, 'https://ssc.gov.in');
+});
+
+test('demo progress references milestones in the canonical roadmap dataset', async () => {
+  const { DEMO_USERS } = await import('../src/db/seed.js');
+  const { CAREER_ROADMAPS } = await import('../src/data/roadmapData.js');
+  const available = new Set(
+    Object.values(CAREER_ROADMAPS).flatMap((career) =>
+      Object.values(career.stages || {}).flatMap((stage) => (stage.milestones || []).map((milestone) => milestone.id))
+    )
+  );
+  for (const user of DEMO_USERS) {
+    for (const milestoneId of user.progress?.completedMilestones || []) {
+      assert.ok(available.has(milestoneId), `Demo user ${user.id} references unknown roadmap milestone ${milestoneId}`);
+    }
+  }
+});
+
+test('all relative JavaScript imports resolve to files', () => {
+  const sourceRoot = path.join(root, 'src');
+  const files = walk(sourceRoot).filter((file) => file.endsWith('.js'));
+  const importPattern = /\bfrom\s*['"]([^'"]+)['"]/g;
+  for (const file of files) {
+    const content = fs.readFileSync(file, 'utf8');
+    for (const match of content.matchAll(importPattern)) {
+      const specifier = match[1];
+      if (!specifier.startsWith('.')) continue;
+      const resolved = path.resolve(path.dirname(file), specifier);
+      assert.ok(fs.existsSync(resolved), `Broken import in ${path.relative(root, file)}: ${specifier}`);
+    }
+  }
+});
+
+test('inline window handler calls have an implementation or are a known browser API', () => {
+  const files = walk(path.join(root, 'src')).filter((file) => file.endsWith('.js'));
+  const contents = files.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
+  const defined = new Set([...contents.matchAll(/window\.([A-Za-z_$][\w$]*)\s*=/g)].map((match) => match[1]));
+  const called = new Set([...contents.matchAll(/window\.([A-Za-z_$][\w$]*)\s*\(/g)].map((match) => match[1]));
+  const browserApis = new Set([
+    'addEventListener', 'removeEventListener', 'scrollTo', 'confirm', 'alert',
+    'open', 'setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame'
+  ]);
+  const missing = [...called].filter((name) => !defined.has(name) && !browserApis.has(name));
+  assert.deepEqual(missing, [], `Missing window handlers: ${missing.join(', ')}`);
+});
+
+test('sensitive rendering paths keep AI output escaped and toast messages textual', () => {
+  const assistant = read('src/pages/AIAssistant.js');
+  const toast = read('src/components/Toast.js');
+  const roadmap = read('src/pages/Roadmap.js');
+  assert.ok(assistant.includes('return escapeHtml(text)'), 'AI model output should be escaped before HTML formatting');
+  assert.ok(toast.includes('messageEl.textContent = String(message ?? \'\')'), 'Toast content should be inserted as text');
+  assert.ok(roadmap.includes('escapeHtml(note)'), 'Saved milestone notes should be escaped on rerender');
+});
+
+test('auth session storage strips passwords and normalizes progress safely', async () => {
+  const data = new Map();
+  globalThis.localStorage = {
+    getItem(key) { return data.has(key) ? data.get(key) : null; },
+    setItem(key, value) { data.set(key, String(value)); },
+    removeItem(key) { data.delete(key); },
+    clear() { data.clear(); }
+  };
+  const { store } = await import('../src/store.js');
+  store.setUser({ id: 'test-user', name: 'Test Student', email: 'student@example.test', password: 'do-not-store' });
+  const user = store.getUser();
+  assert.equal(user.id, 'test-user');
+  assert.equal('password' in user, false);
+  store.saveProgress({ completedMilestones: ['one', 'one'], savedOpportunities: 'bad-data', trackedExams: null, notes: [] });
+  const progress = store.getProgress();
+  assert.deepEqual(progress.completedMilestones, ['one']);
+  assert.deepEqual(progress.savedOpportunities, []);
+  assert.deepEqual(progress.trackedExams, []);
+  assert.deepEqual(progress.notes, {});
+});
