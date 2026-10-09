@@ -1,7 +1,7 @@
 // pages/CareerDetail.js
 import { store } from '../store.js';
 import { router } from '../router.js';
-import { showToast } from '../main.js';
+import { showToast } from '../components/Toast.js';
 import { CAREER_ROADMAPS, ROADMAP_STAGES, mapClassToStage } from '../data/roadmapData.js';
 import { escapeHtml, safeHttpUrl } from '../utils/safeHtml.js';
 
