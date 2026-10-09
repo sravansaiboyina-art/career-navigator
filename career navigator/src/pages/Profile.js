@@ -5,6 +5,7 @@ import { Modal } from '../components/Modal.js';
 import { showToast } from '../components/Toast.js';
 import { router } from '../router.js';
 import { escapeHtml } from '../utils/safeHtml.js';
+import { CAREER_ROADMAPS } from '../data/roadmapData.js';
 
 export function renderProfile(careers = []) {
   const profile = store.getProfile();
@@ -29,7 +30,9 @@ export function renderProfile(careers = []) {
 
   const stageLabel = store.getStageLabel(profile.class);
   const initials = String(profile.name || 'Student').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-  const completedCount = (progress.completedMilestones || []).length;
+  const selectedRoadmap = CAREER_ROADMAPS[profile.selectedCareer];
+  const careerMilestones = Object.values(selectedRoadmap?.stages || {}).flatMap((stage) => stage?.milestones || []);
+  const completedCount = careerMilestones.filter((milestone) => progress.completedMilestones.includes(milestone.id)).length;
   const savedCount = (progress.savedOpportunities || []).length;
   const badges = profile.badges || ['Curious Explorer', 'Stage Navigator'];
 
