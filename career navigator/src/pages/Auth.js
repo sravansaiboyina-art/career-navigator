@@ -172,9 +172,9 @@ function renderSignupForm() {
     </div>
 
     <div class="form-group">
-      <label class="form-label" for="signup-password">Password (min 6 characters) *</label>
+      <label class="form-label" for="signup-password">Password (min 8 characters) *</label>
       <div class="password-input-wrapper" style="position:relative;">
-        <input id="signup-password" class="input w-full" type="password" placeholder="••••••••" required minlength="6" />
+        <input id="signup-password" class="input w-full" type="password" placeholder="••••••••" required minlength="8" autocomplete="new-password" />
         <button type="button" class="password-toggle-btn" onclick="window.togglePasswordVisibility('signup-password')">👁️</button>
       </div>
     </div>
@@ -229,7 +229,7 @@ if (typeof window !== 'undefined') {
     try {
       const result = await db.authenticate(email, password);
       if (!result) {
-        showToast('Invalid email or password. Try quick demo login or demo password: password123', 'error');
+        showToast('Invalid email or password. Try one-click demo login or create a new account.', 'error');
         return;
       }
 
