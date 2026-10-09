@@ -75,7 +75,8 @@ function renderOppCards(opportunities, profile) {
     const isSaved = progress.savedOpportunities.includes(o.id);
     const isRelevant = (o.career || []).includes(profile?.selectedCareer) ||
       (o.targetClass || []).some((targetStage) => targetStage === profile?.class || (targetStage === 'ug' && ['ug', 'grad'].includes(profile?.class)));
-    const officialUrl = safeHttpUrl(o.officialLink);\n    const statusLabel = o.status === 'legacy' ? 'Legacy programme — current cycle unverified' : '';
+    const officialUrl = safeHttpUrl(o.officialLink);
+    const statusLabel = o.status === 'legacy' ? 'Legacy programme — current cycle unverified' : '';
     return `
     <div class="opp-card reveal delay-${Math.min(i + 1, 8)}">
       <div class="flex items-start justify-between gap-3">
@@ -98,7 +99,8 @@ function renderOppCards(opportunities, profile) {
 
       <div style="background:var(--bg-glass);border-radius:var(--radius-md);padding:0.625rem 0.75rem;margin-top:0.75rem;">
         <div class="text-xs text-muted">Eligibility</div>
-        <div class="text-xs fw-600 mt-1" style="color:var(--text-secondary);"> ${escapeHtml(o.eligibility || 'Check the official notification.')}</div>\n        ${o.statusNote ? `<div class="text-xs text-muted mt-2">${escapeHtml(o.statusNote)}</div>` : ''}
+        <div class="text-xs fw-600 mt-1" style="color:var(--text-secondary);"> ${escapeHtml(o.eligibility || 'Check the official notification.')}</div>
+        ${o.statusNote ? `<div class="text-xs text-muted mt-2">${escapeHtml(o.statusNote)}</div>` : ''}
       </div>
 
       <div class="opp-card-footer mt-3">
