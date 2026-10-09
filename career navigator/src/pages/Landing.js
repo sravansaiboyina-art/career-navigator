@@ -148,9 +148,9 @@ export function renderLanding(careers = [], exams = [], opportunities = []) {
       ${[
         ['🗺️','Personal Roadmap','Stage-by-stage milestones tailored to your class, stream, and career goal.','rgba(124,58,237,0.15)'],
         ['📅','Exam Calendar','Review exam information and expected application windows. Verify live dates on official portals.','rgba(6,182,212,0.15)'],
-        ['💡','Smart Eligibility','Know exactly which exams and scholarships you qualify for right now.','rgba(245,158,11,0.15)'],
+        ['💡','Smart Eligibility','Review eligibility criteria and compare requirements with your current education stage.','rgba(245,158,11,0.15)'],
         ['🤖','AI Career Assistant','Ask anything — get personalized, India-specific guidance powered by Gemini AI.','rgba(236,72,153,0.15)'],
-        ['🎓','Scholarships & More','Explore scholarship and funding records; confirm each programme's current status with its official source.','rgba(16,185,129,0.15)'],
+        ['🎓','Scholarships & More','Explore scholarship and funding records; confirm each programme’s current status with its official source.','rgba(16,185,129,0.15)'],
         ['📊','Progress Tracker','Visualize your growth with milestone completions and interactive charts.','rgba(239,68,68,0.15)'],
       ].map(([icon,title,desc,bg],i)=>`
         <div class="feature-card reveal delay-${i+1}">
