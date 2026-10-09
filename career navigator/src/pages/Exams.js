@@ -108,6 +108,12 @@ function renderExamCard(exam, index) {
     : /high/i.test(difficulty) ? 'badge-amber' : 'badge-green';
   const topics = (exam.importantTopics || []).slice(0, 4);
   const applicationMonth = exam.applicationWindow?.approxMonth || 'Not announced';
+  const statusLabel = exam.status === 'legacy'
+    ? 'Legacy entry — current cycle unverified'
+    : exam.status === 'notice-only'
+      ? 'Official notice referenced — live status not checked'
+      : '';
+  const statusClass = exam.status === 'legacy' ? 'badge-amber' : 'badge-cyan';
 
   return `
 <article class="exam-card reveal delay-${Math.min(index + 1, 8)}">
@@ -118,6 +124,7 @@ function renderExamCard(exam, index) {
         <div class="exam-card-title">${escapeHtml(exam.title || 'Exam')}</div>
       </div>
       <div class="text-xs text-muted">${escapeHtml(exam.fullName || '')}</div>
+      ${statusLabel ? `<div class="badge ${statusClass} mt-2">${escapeHtml(statusLabel)}</div>` : ''}
     </div>
     <span class="badge ${difficultyClass}" style="white-space:nowrap;">${escapeHtml(difficulty)}</span>
   </div>
@@ -240,6 +247,7 @@ window.showExamDetails = (examId) => {
         <h4>Timeline (estimate only)</h4>
         <p>Application window: ${escapeHtml(exam.applicationWindow?.approxMonth || 'Not announced')}${exam.applicationWindow?.approxEnd ? ` to ${escapeHtml(exam.applicationWindow.approxEnd)}` : ''}. Expected exam period: ${escapeHtml(exam.examMonth || 'Not announced')}.</p>
         <p class="text-xs text-muted">These months may be outdated or change each year. Confirm current dates, eligibility, fees, and application status with the official notification.</p>
+        ${exam.statusNote ? `<p class="text-xs text-muted">${escapeHtml(exam.statusNote)}</p>` : ''}
         <div class="flex gap-3 flex-wrap">
           ${officialUrl ? `<a class="btn btn-primary btn-sm" href="${escapeHtml(officialUrl)}" target="_blank" rel="noopener noreferrer">Official website ↗</a>` : ''}
           ${alternativeLinks.join(' ')}
