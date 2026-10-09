@@ -199,7 +199,7 @@ test('page modules do not import shared toast utilities back through the app ent
   const files = walk(path.join(root, 'src')).filter((file) => file.endsWith('.js'));
   for (const file of files) {
     const content = fs.readFileSync(file, 'utf8');
-    assert.doesNotMatch(content, /from ['"]\\.\\.\\/main\\.js['"]/, `Circular main.js import in ${path.relative(root, file)}`);
+    assert.equal(content.includes("from '../main.js'"), false, 'Circular main.js import in ' + path.relative(root, file));
   }
 });
 
@@ -214,7 +214,7 @@ test('exam education-stage labels do not overstate eligibility', () => {
 test('saved opportunities are not lost when the current career or stage filters change', () => {
   const opportunitiesPage = read('src/pages/Opportunities.js');
   assert.ok(opportunitiesPage.includes('const allOpportunities = Array.isArray(window.__opportunities)'));
-  assert.match(opportunitiesPage, /activeType === 'saved' \\? allOpportunities\\.filter/);
+  assert.ok(opportunitiesPage.includes("activeType === 'saved' ? allOpportunities.filter"));
 });
 
 test('startup data loading checks HTTP status and gives the user a retry path', () => {
