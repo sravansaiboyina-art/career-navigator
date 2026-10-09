@@ -179,7 +179,7 @@ test('internal navigation targets resolve to explicitly registered route familie
     if (!target) continue;
     const rawPath = target.split('?')[0];
     let pathOnly = rawPath;
-    const interpolationIndex = pathOnly.indexOf('\${');
+    const interpolationIndex = pathOnly.indexOf('$' + '{');
     if (interpolationIndex >= 0) {
       pathOnly = pathOnly.slice(0, interpolationIndex);
       if (pathOnly.endsWith('/')) pathOnly = pathOnly.slice(0, -1);
@@ -192,7 +192,7 @@ test('internal navigation targets resolve to explicitly registered route familie
     if (!matched) missing.push(target);
   }
 
-  assert.deepEqual([...new Set(missing)], [], \`Unregistered navigation targets: \${missing.join(', ')}\`);
+  assert.deepEqual([...new Set(missing)], [], 'Unregistered navigation targets: ' + missing.join(', '));
 });
 
 test('page modules do not import shared toast utilities back through the app entry point', () => {
