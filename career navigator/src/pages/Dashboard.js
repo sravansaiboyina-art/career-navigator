@@ -171,8 +171,6 @@ export function renderDashboard(careers, exams, opportunities) {
           <button class="btn btn-ghost btn-sm" onclick="window.navigateTo('/exams')">View all →</button>
         </div>
         <p class="text-xs text-muted mb-4">Matched by career and education stage only. Confirm age, subjects, marks, and current rules on the official portal.</p>
-        <div>
-        </div>
         ${myExams.length === 0
       ? `<div class="empty-state" style="padding:1.5rem;"><div class="empty-icon">📚</div><p>No exams for your current stage yet.</p></div>`
       : myExams.map(e => `
