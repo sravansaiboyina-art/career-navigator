@@ -110,16 +110,17 @@ function setupRoutes() {
     '/opportunity'
   ];
   router.register('/opportunity', (path) => {
-    const opportunityId = path.replace('/opportunity/', '');
+    const opportunityId = path.startsWith('/opportunity/')
+      ? decodeURIComponent(path.slice('/opportunity/'.length))
+      : '';
+    const opportunity = opportunities.find((item) => item.id === opportunityId);
 
-    const opportunity = opportunities.find(
-      o => o.id === opportunityId
-    );
+    if (!opportunityId || !opportunity) {
+      setPage(renderOpportunityDetail(null), '/opportunity');
+      return;
+    }
 
-    setPage(
-      renderOpportunityDetail(opportunity),
-      '/opportunity/' + opportunityId
-    );
+    setPage(renderOpportunityDetail(opportunity), '/opportunity/' + encodeURIComponent(opportunityId));
   });
 
   router.before((path) => {
