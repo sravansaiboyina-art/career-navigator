@@ -89,7 +89,8 @@ function renderOppCards(opportunities, profile) {
         </div>
         <div class="flex gap-2 items-center">
           ${isRelevant ? `<span class="badge badge-green" style="font-size:0.6rem;">For You</span>` : ''}
-          <span class="badge ${typeBadge[o.type] || 'badge-violet'}" style="font-size:0.6rem;white-space:nowrap;">${escapeHtml(o.type)}</span>\n          ${statusLabel ? `<span class="badge badge-amber" style="font-size:0.6rem;">${escapeHtml(statusLabel)}</span>` : ''}
+          <span class="badge ${typeBadge[o.type] || 'badge-violet'}" style="font-size:0.6rem;white-space:nowrap;">${escapeHtml(o.type)}</span>
+          ${statusLabel ? `<span class="badge badge-amber" style="font-size:0.6rem;">${escapeHtml(statusLabel)}</span>` : ''}
         </div>
       </div>
 
@@ -105,7 +106,7 @@ function renderOppCards(opportunities, profile) {
 
       <div class="opp-card-footer mt-3">
         <div>
-          <div class="deadline-chip deadline-open">
+          <div class="deadline-chip deadline-soon">
             📅 Typical window: ${escapeHtml(o.deadline?.month || 'Not announced')}
           </div>
           ${o.deadline?.note ? `<div class="text-xs text-muted mt-1" style="max-width:180px;">${escapeHtml(o.deadline.note)}</div>` : ''}
