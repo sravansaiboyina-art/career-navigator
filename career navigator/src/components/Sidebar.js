@@ -1,5 +1,6 @@
 // src/components/Sidebar.js — Responsive Navigation Sidebar for App Views
 import { store } from '../store.js';
+import { escapeHtml } from '../utils/safeHtml.js';
 
 export function renderSidebar(activePath) {
   const profile = store.getProfile();
@@ -23,9 +24,9 @@ export function renderSidebar(activePath) {
   <aside class="app-sidebar ${isCollapsed ? 'collapsed' : ''}" id="app-sidebar">
     <div class="sidebar-header">
       <div class="sidebar-student-summary">
-        <div class="student-avatar-badge">${profile.name[0] || 'S'}</div>
+        <div class="student-avatar-badge">${escapeHtml(profile.name?.[0] || 'S')}</div>
         <div class="student-info-text">
-          <div class="student-name truncate">${profile.name}</div>
+          <div class="student-name truncate">${escapeHtml(profile.name || 'Student')}</div>
           <div class="student-stage-badge">${stageLabel}</div>
         </div>
       </div>
