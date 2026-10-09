@@ -106,7 +106,7 @@ function renderOppCards(opportunities, profile) {
           <div class="deadline-chip deadline-open">
             📅 Typical window: ${escapeHtml(o.deadline?.month || 'Not announced')}
           </div>
-          ${o.deadline.note ? `<div class="text-xs text-muted mt-1" style="max-width:180px;">${escapeHtml(o.deadline.note)}</div>` : ''}
+          ${o.deadline?.note ? `<div class="text-xs text-muted mt-1" style="max-width:180px;">${escapeHtml(o.deadline.note)}</div>` : ''}
         </div>
         <div class="flex gap-2 items-center">
           <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="window.toggleSaveOpp('${escapeHtml(o.id)}',this)" title="${isSaved ? 'Saved' : 'Save'}">
