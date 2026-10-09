@@ -1,6 +1,6 @@
 // pages/Opportunities.js
 import { store } from '../store.js';
-import { showToast } from '../main.js';
+import { showToast } from '../components/Toast.js';
 import { escapeHtml, safeHttpUrl } from '../utils/safeHtml.js';
 
 let activeType = 'all';
