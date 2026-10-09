@@ -2,6 +2,8 @@
 import { store } from '../store.js';
 import { router } from '../router.js';
 import { showToast } from '../main.js';
+import { CAREER_ROADMAPS, ROADMAP_STAGES, mapClassToStage } from '../data/roadmapData.js';
+import { escapeHtml, safeHttpUrl } from '../utils/safeHtml.js';
 
 export function renderCareerDetail(career, exams) {
   if (!career) {
@@ -9,8 +11,9 @@ export function renderCareerDetail(career, exams) {
   }
 
   const profile = store.getProfile();
-  const stageOrder = ['6','7','8','9','10','11','12','ug','grad'];
-  const currentIdx = stageOrder.indexOf(profile?.class || '11');
+  const roadmap = CAREER_ROADMAPS[career.id];
+  const currentStageId = mapClassToStage(String(profile?.class || '11'));
+  const currentIdx = ROADMAP_STAGES.findIndex(stage => stage.id === currentStageId);
   const isSelected = profile?.selectedCareer === career.id;
 
   const careerExams = exams.filter(e => (e.career || []).includes(career.id));
@@ -71,25 +74,26 @@ export function renderCareerDetail(career, exams) {
             ${profile?.selectedCareer === career.id ? `<button class="btn btn-ghost btn-sm" onclick="window.navigateTo('/roadmap')">Full Roadmap →</button>` : ''}
           </div>
           <div class="roadmap-timeline">
-            ${Object.entries(career.stages || {}).map(([stage, data], i) => {
-              const stageIdx = stageOrder.indexOf(stage);
+            ${ROADMAP_STAGES.filter(stage => roadmap?.stages?.[stage.id]).map((stageMeta) => {
+              const data = roadmap.stages[stageMeta.id];
+              const stageIdx = ROADMAP_STAGES.findIndex(stage => stage.id === stageMeta.id);
               const stageClass = stageIdx < currentIdx ? 'past' : stageIdx === currentIdx ? 'current' : 'future';
               return `
               <div class="timeline-stage ${stageClass}">
                 <div class="timeline-stage-header">
                   <span class="badge ${stageClass==='current'?'badge-violet':stageClass==='past'?'badge-green':'badge-cyan'}">
-                    ${stage === 'ug' ? 'Undergraduate' : stage === 'grad' ? 'Graduate / Career' : 'Class '+stage}
+                    ${escapeHtml(stageMeta.label)}
                   </span>
                   ${stageClass==='current' ? '<span class="badge badge-amber animate-pulse">You are here</span>' : ''}
                 </div>
                 <div class="card" style="background:${stageClass==='current'?'rgba(124,58,237,0.08)':stageClass==='past'?'rgba(16,185,129,0.04)':'var(--bg-glass)'};border-color:${stageClass==='current'?'rgba(124,58,237,0.3)':'var(--border)'};">
                   <div class="fw-600 text-sm mb-2" style="color:${stageClass==='current'?'var(--violet-light)':stageClass==='past'?'var(--green-light)':'var(--text-secondary)'}">
-                    ${stageClass==='past'?'✅ ':''}${data.focus}
+                    ${stageClass==='past'?'✅ ':''}${escapeHtml(data.focus || '')}
                   </div>
                   <div class="text-xs text-muted">${data.milestones?.length || 0} milestones</div>
                 </div>
               </div>`;
-            }).join('')}
+            ${endToken}
           </div>
         </div>
 
@@ -119,9 +123,7 @@ export function renderCareerDetail(career, exams) {
                 <span class="badge badge-violet" style="font-size:0.6rem;">${e.difficulty}</span>
                 <span class="badge badge-cyan" style="font-size:0.6rem;">${e.frequency}</span>
               </div>
-              <a href="${e.officialLink}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm w-full mt-2" style="justify-content:center;font-size:0.75rem;">
-                Official Site ↗
-              </a>
+              <a ${safeHttpUrl(e.officialLink) ? `<a href="${escapeHtml(safeHttpUrl(e.officialLink))}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm w-full mt-2" style="justify-content:center;font-size:0.75rem;">Official Site ↗</a>` : ''}
             </div>`).join('')}
         </div>
 
