@@ -8,6 +8,7 @@ let activeFilter = 'all';
 const FILTERS = [
   ['all', 'All'],
   ['entrance', 'Entrance'],
+  ['postgrad-entrance', 'Postgraduate Entrance'],
   ['civil-services', 'Civil Services'],
   ['govt-exam', 'Govt Exams'],
   ['banking', 'Banking'],
@@ -175,7 +176,11 @@ function refreshExams() {
   const exams = getCurrentExams();
   const { myExams, upcomingExams, trackedExams } = getExamLists(exams);
   const content = document.getElementById('exams-content');
-  if (content) content.innerHTML = renderExamList(exams, myExams, upcomingExams, trackedExams);
+  if (content) {
+    content.innerHTML = renderExamList(exams, myExams, upcomingExams, trackedExams);
+    // Newly rendered cards were added after the initial scroll-reveal observer ran.
+    content.querySelectorAll('.reveal').forEach((card) => card.classList.add('visible'));
+  }
 
   document.querySelectorAll('.tab-btn').forEach((button) => {
     const isActive = button.getAttribute('onclick')?.includes(`setExamTab('${activeTab}')`);
