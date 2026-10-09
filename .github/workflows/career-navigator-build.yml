@@ -1,0 +1,36 @@
+name: Career Navigator build
+
+on:
+  push:
+    branches:
+      - main
+      - fix/exam-tracker-details
+    paths:
+      - "career navigator/**"
+      - ".github/workflows/career-navigator-build.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "career navigator/**"
+      - ".github/workflows/career-navigator-build.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: career navigator
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: "career navigator/package-lock.json"
+      - name: Install dependencies
+        run: npm ci
+      - name: Build demo
+        run: npm run build
