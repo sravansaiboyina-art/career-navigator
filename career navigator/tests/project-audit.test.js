@@ -166,3 +166,60 @@ test('router registers all intended application routes and guards protected rout
   }
   assert.ok(main.includes("path === routePath || path.startsWith(routePath + '/')"));
 });
+
+test('internal navigation targets resolve to explicitly registered route families', () => {
+  const main = read('src/main.js');
+  const files = walk(path.join(root, 'src')).filter((file) => file.endsWith('.js'));
+  const source = files.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
+  const routes = [...main.matchAll(/router\\.register\\(['"]([^'"]+)['"]/g)].map((match) => match[1]);
+  const targets = [...source.matchAll(/window\\.navigateTo\\(['"]([^'"]+)['"]\\)/g)].map((match) => match[1]);
+  const missing = [];
+
+  for (const target of targets) {
+    if (!target || target.includes('${')) continue;
+    const pathOnly = target.split('?')[0].replace(/\\/\\$\\{.*$/, '');
+    const matched = routes.some((route) =>
+      route === pathOnly || pathOnly.startsWith(route === '/' ? '\\u0000' : route + '/') ||
+      (route === '*' && pathOnly.length > 0)
+    );
+    if (!matched) missing.push(target);
+  }
+
+  assert.deepEqual([...new Set(missing)], [], `Unregistered navigation targets: ${missing.join(', ')}`);
+});
+
+test('page modules do not import shared toast utilities back through the app entry point', () => {
+  const files = walk(path.join(root, 'src')).filter((file) => file.endsWith('.js'));
+  for (const file of files) {
+    const content = fs.readFileSync(file, 'utf8');
+    assert.doesNotMatch(content, /from ['"]\\.\\.\\/main\\.js['"]/, `Circular main.js import in ${path.relative(root, file)}`);
+  }
+});
+
+test('exam education-stage labels do not overstate eligibility', () => {
+  const examsPage = read('src/pages/Exams.js');
+  const dashboard = read('src/pages/Dashboard.js');
+  assert.ok(examsPage.includes('Graduation degree completed'));
+  assert.ok(examsPage.includes('Stage matching is not full eligibility'));
+  assert.ok(dashboard.includes('Matched by career and education stage only'));
+});
+
+test('saved opportunities are not lost when the current career or stage filters change', () => {
+  const opportunitiesPage = read('src/pages/Opportunities.js');
+  assert.ok(opportunitiesPage.includes('const allOpportunities = Array.isArray(window.__opportunities)'));
+  assert.match(opportunitiesPage, /activeType === 'saved' \\? allOpportunities\\.filter/);
+});
+
+test('startup data loading checks HTTP status and gives the user a retry path', () => {
+  const main = read('src/main.js');
+  assert.ok(main.includes('if (!response.ok)'));
+  assert.ok(main.includes('renderStartupError()'));
+  assert.ok(main.includes('startup-retry'));
+});
+
+test('demo database limitations and production security boundaries are documented', () => {
+  const readme = read('NEXT_STEPS_README.md');
+  assert.match(readme, /browser|IndexedDB|localStorage/i);
+  assert.match(readme, /production|server-side|backend/i);
+  assert.match(readme, /password|API key|credential/i);
+});
