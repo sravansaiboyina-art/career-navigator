@@ -100,6 +100,8 @@ export const store = {
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(PROGRESS_KEY);
+    // API credentials are per-browser-session and must not carry into another student's session.
+    try { sessionStorage.removeItem('cn_gemini_key'); } catch { /* sessionStorage can be unavailable in hardened browsers */ }
   },
 
   // ── Profile ──────────────────────────────────────────
