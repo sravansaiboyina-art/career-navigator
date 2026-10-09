@@ -1,6 +1,7 @@
 // pages/Dashboard.js
 import { getCurrentStageAdvice } from '../utils/careerEngine.js';
 import { CAREER_ROADMAPS, mapClassToStage } from '../data/roadmapData.js';
+import { escapeHtml } from '../utils/safeHtml.js';
 
 import { store } from '../store.js';
 
@@ -47,10 +48,10 @@ export function renderDashboard(careers, exams, opportunities) {
         <div class="flex items-center gap-4 flex-wrap justify-between">
           <div>
             <div class="text-sm text-muted mb-1">${greeting} 👋</div>
-            <h2 style="font-size:1.75rem;margin-bottom:0.25rem;">${profile.name}</h2>
+            <h2 style="font-size:1.75rem;margin-bottom:0.25rem;">${escapeHtml(profile.name || 'Student')}</h2>
             <div class="flex gap-3 flex-wrap mt-2">
               <span class="badge badge-violet">📚 ${stageLabel}</span>
-              ${profile.stream !== 'na' ? `<span class="badge badge-cyan">${profile.stream.charAt(0).toUpperCase() + profile.stream.slice(1)} Stream</span>` : ''}
+              ${profile.stream !== 'na' ? `<span class="badge badge-cyan">${escapeHtml(profile.stream.charAt(0).toUpperCase() + profile.stream.slice(1))} Stream</span>` : ''}
               <span class="badge badge-amber">${career?.emoji} ${career?.title}</span>
             </div>
           </div>
