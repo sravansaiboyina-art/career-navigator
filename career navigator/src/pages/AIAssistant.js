@@ -24,7 +24,7 @@ export function renderAIAssistant() {
       <div class="page-header-inner">
         <div>
           <h2>🤖 AI Career Assistant</h2>
-          <p class="mt-1">Powered by Google Gemini · Personalized for ${profile?.name || 'you'}</p>
+          <p class="mt-1">Powered by Google Gemini · Personalized for ${escapeHtml(profile?.name || 'you')}</p>
         </div>
         <div class="flex gap-3 items-center">
           ${hasKey
