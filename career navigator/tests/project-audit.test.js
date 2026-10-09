@@ -171,13 +171,14 @@ test('internal navigation targets resolve to explicitly registered route familie
   const main = read('src/main.js');
   const files = walk(path.join(root, 'src')).filter((file) => file.endsWith('.js'));
   const source = files.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
-  const routes = [...main.matchAll(/router\\.register\\(['"]([^'"]+)['"]/g)].map((match) => match[1]);
-  const targets = [...source.matchAll(/window\\.navigateTo\\(['"]([^'"]+)['"]\\)/g)].map((match) => match[1]);
+  const routes = [...main.matchAll(/router\.register\\(['"]([^'"]+)['"]/g)].map((match) => match[1]);
+  const targets = [...source.matchAll(/window\.navigateTo\\(['"]([^'"]+)['"]\\)/g)].map((match) => match[1]);
   const missing = [];
 
   for (const target of targets) {
     if (!target || target.includes('${')) continue;
-    const pathOnly = target.split('?')[0].replace(/\\/\\$\\{.*$/, '');
+    const rawPath = target.split('?')[0];
+    const pathOnly = rawPath.includes('${') ? rawPath.slice(0, rawPath.indexOf('${')).replace(/\\/$/, '') : rawPath;
     const matched = routes.some((route) =>
       route === pathOnly || pathOnly.startsWith(route === '/' ? '\\u0000' : route + '/') ||
       (route === '*' && pathOnly.length > 0)
