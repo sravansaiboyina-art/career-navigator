@@ -8,8 +8,8 @@ let activeType = 'all';
 export function renderOpportunities(opportunities) {
   const profile = store.getProfile();
   const progress = store.getProgress();
-  const types = ['all', 'scholarship', 'internship', 'study-abroad', 'govt-job'];
-  const typeLabels = { all: 'All', scholarship: '🏆 Scholarships', internship: '💼 Internships', 'study-abroad': '🌍 Study Abroad', 'govt-job': '🏛️ Govt Jobs' };
+  const types = ['all', 'scholarship', 'internship', 'study-abroad', 'govt-job', 'saved'];
+  const typeLabels = { all: 'All', scholarship: '🏆 Scholarships', internship: '💼 Internships', 'study-abroad': '🌍 Study Abroad', 'govt-job': '🏛️ Govt Jobs', saved: '⭐ Saved' };
 
   const relevant = getRelevantOpportunities(opportunities, profile);
 
@@ -57,7 +57,7 @@ function getRelevantOpportunities(opportunities, profile) {
 
 function renderOppCards(opportunities, profile) {
   const progress = store.getProgress();
-  let list = activeType === 'all' ? opportunities : opportunities.filter(o => o.type === activeType);
+  let list = activeType === 'all' ? opportunities : activeType === 'saved' ? opportunities.filter(o => progress.savedOpportunities.includes(o.id)) : opportunities.filter(o => o.type === activeType);
 
   if (list.length === 0) {
     return `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">🔍</div><h3>No opportunities in this category</h3></div>`;
@@ -135,7 +135,7 @@ ${officialUrl ? `<a href="${escapeHtml(officialUrl)}" target="_blank" rel="noope
 window.setOppType = (type) => {
   activeType = type;
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    const types = ['all', 'scholarship', 'internship', 'study-abroad', 'govt-job'];
+    const types = ['all', 'scholarship', 'internship', 'study-abroad', 'govt-job', 'saved'];
     b.classList.toggle('active', types[i] === type);
   });
   const profile = store.getProfile();
