@@ -63,7 +63,7 @@ export const DEMO_USERS = [
     progress: {
       id: 'prog-jee-2',
       profileId: 'profile-jee-2',
-      completedMilestones: ['m-eng-12-1', 'm-eng-12-3'],
+      completedMilestones: ['m-eng-12-1', 'm-eng-12-2'],
       savedOpportunities: ['opp-google-stem'],
       notes: {},
       updatedAt: new Date().toISOString()
@@ -129,7 +129,7 @@ export const DEMO_USERS = [
     progress: {
       id: 'prog-foundation-4',
       profileId: 'profile-foundation-4',
-      completedMilestones: ['m-iit-8-1'],
+      completedMilestones: ['m-iit-f-1'],
       savedOpportunities: ['opp-ntse'],
       notes: {},
       updatedAt: new Date().toISOString()
@@ -164,7 +164,7 @@ export const DEMO_USERS = [
     progress: {
       id: 'prog-bank-5',
       profileId: 'profile-bank-5',
-      completedMilestones: ['m-bank-grad-1'],
+      completedMilestones: ['m-bank-gc-1'],
       savedOpportunities: [],
       notes: {},
       updatedAt: new Date().toISOString()
