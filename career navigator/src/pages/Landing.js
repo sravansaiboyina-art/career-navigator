@@ -4,7 +4,7 @@ import { escapeHtml } from '../utils/safeHtml.js';
 export function renderLanding(careers = [], exams = [], opportunities = []) {
   const scholarshipCount = opportunities.filter((item) => item.type === 'scholarship').length;
   const featuredExams = ['neet-ug', 'jee-main', 'gate'].map((id) => exams.find((exam) => exam.id === id)).filter(Boolean);
-  const featuredOpportunities = ['inspire-scholarship', 'google-step-internship', 'pm-yasasvi'].map((id) => opportunities.find((opportunity) => opportunity.id === id)).filter(Boolean);
+  const featuredOpportunities = opportunities.filter((opportunity) => ['scholarship', 'internship', 'govt-job'].includes(opportunity.type)).slice(0, 1);
   const previewCards = [
     ...featuredExams.slice(0, 2).map((exam) => ({
       emoji: exam.emoji || '📅',
