@@ -202,7 +202,7 @@ if (typeof window !== 'undefined') {
   };
 
   window.showPasswordResetInfo = () => {
-    showToast('Password recovery is not part of this demo yet. Use a one-click demo persona or create a new account.', 'info');
+    router.navigate('/forgot-password');
   };
 
   window.togglePasswordVisibility = (inputId) => {
