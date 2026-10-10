@@ -154,13 +154,26 @@ try {
     assert.equal(newProfile.class, '8');
     assert.equal(newProfile.selectedCareer, 'upsc',
       'Younger students must be able to choose a later-stage career goal');
+
+    // Verify that onboarding changes reach SQLite through the authenticated API,
+    // then confirm a fresh page load restores the same student from the backend.
+    await onboardingPage.waitForFunction(async () => {
+      const response = await fetch('/api/auth/me');
+      if (!response.ok) return false;
+      const account = await response.json();
+      return account.profile?.selectedCareer === 'upsc' && account.profile?.name === 'E2E Student';
+    }, null, { timeout: 15000 });
+    await onboardingPage.reload({ waitUntil: 'networkidle' });
+    await onboardingPage.locator('.dashboard-hero').waitFor({ state: 'visible' });
+    const restoredProfile = await onboardingPage.evaluate(() => JSON.parse(localStorage.getItem('cn_profile') || '{}'));
+    assert.equal(restoredProfile.selectedCareer, 'upsc', 'A reload must restore the profile from the server session');
     assert.deepEqual(onboardingErrors, [], `Unexpected onboarding browser exceptions: ${onboardingErrors.join('; ')}`);
   } finally {
     await onboardingContext.close();
   }
 
   assert.deepEqual(pageErrors, [], `Unexpected browser exceptions: ${pageErrors.join('; ')}`);
-  console.log('Browser smoke tests passed: demo login, real account registration and onboarding, future-stage career selection, dashboard, roadmap/progress, exam tracking persistence, opportunity saving/details, profile editing, offline AI, not-found route, and protected-route redirect.');
+  console.log('Full-stack browser tests passed: demo login, server-backed account registration/onboarding, future-stage career selection, SQLite profile persistence across reloads, dashboard, roadmap/progress, exam tracking persistence, opportunity saving/details, profile editing, offline AI, not-found route, and protected-route redirect.');
 } finally {
   await context.close();
   await browser.close();
