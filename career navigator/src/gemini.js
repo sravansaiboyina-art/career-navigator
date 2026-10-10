@@ -184,26 +184,23 @@ async function generateOfflineAdvice(messages, profile, onToken) {
   let response = '';
 
   if (lastUserMsg.includes('score') || lastUserMsg.includes('aiims') || lastUserMsg.includes('rank')) {
-    response = `### 🎯 Cutoff & Score Targets for ${name} (${stageName})
+    response = `### 🎯 Score & Rank Planning for ${name} (${stageName})
 
-For **${career === 'medicine' ? 'NEET UG & AIIMS Delhi' : career === 'engineering' || career === 'iit-jee' ? 'IITs & JEE Advanced' : 'Target Entrances'}**:
+Cutoffs and target ranks change by exam year, course, category, state quota, institute, and available seats. Offline demo mode does not have live cutoff data, so I should not promise one universal score or rank.
 
-- **AIIMS Delhi / Top Medical Colleges**: Target **705+ / 720** in NEET UG. General cutoff usually sits around All India Rank (AIR) 50-60.
-- **Top IITs (Bombay/Delhi CS)**: Target a score in the top 100 AIR in JEE Advanced (typically 80%+ marks in JEE Advanced).
-- **NITs Top Branches**: 99.2+ percentile in JEE Main (210+ marks out of 300).
-- **UPSC Prelims**: Aim for 105+ in GS Paper 1 and 33% qualifying in CSAT.
-
-**Actionable Advice for your current stage (${stageName}):**
-1. Track your error percentage per test paper rather than raw marks.
-2. Aim for 85%+ accuracy in mock tests before working on speed.
-3. Dedicate 2 hours after every test solely to analyze questions you got wrong!`;
+**A practical approach for your current stage (${stageName}):**
+1. Open the current official notification and official previous-year opening/closing ranks or cutoff marks for your exact course and category.
+2. Compare the same quota, category, course, and exam year rather than comparing an overall rank with a category-specific cutoff.
+3. Create reach, target, and safer options using at least two or three years of published results.
+4. Track mock-test accuracy, subject-wise errors, and score trends; review missed questions after each test.
+5. Use the Exam Tracker's official-site links and verify current rules before making an application decision.`;
   } else if (lastUserMsg.includes('book') || lastUserMsg.includes('resource') || lastUserMsg.includes('material')) {
     response = `### 📚 Recommended Books & Resources for ${name}
 
 Here are the highest-yield books tailored for **${career.toUpperCase()}** at the **${stageName}** level:
 
 - **Biology / Medical**:
-  - *NCERT Biology (Class 11 & 12)* — The definitive bible (90% of NEET is directly from NCERT).
+  - *NCERT Biology (Class 11 & 12)* — A core source for concepts and textbook-aligned biology preparation; confirm the current syllabus and question pattern.
   - *Dr. Ali Objective Biology* or *MTG NCERT at your Fingertips*.
 - **Physics**:
   - *Concepts of Physics by H.C. Verma (Vol 1 & 2)* for conceptual clarity.
@@ -232,14 +229,14 @@ Here is your customized roadmap for **${career.replace('-', ' ').toUpperCase()}*
    - Check the **My Roadmap** tab in Career Navigator to see the stage milestones specifically mapped to your class.
    - Mark items as done to keep your progress score advancing!
 
-*You can also connect a live Gemini API key in the top right for infinite conversational questions!*`;
+*Live Gemini responses use the API quota and terms of the Google account associated with your key.*`;
   } else if (lastUserMsg.includes('scholarship') || lastUserMsg.includes('internship') || lastUserMsg.includes('financial')) {
     response = `### 💰 Opportunities & Financial Aid for ${name}
 
 Based on your stage (**${stageName}**):
 
-- **INSPIRE Scholarship (DST)**: ₹80,000/year for students in top 1% of Class 10/12 board exams pursuing natural sciences or medicine.
-- **PM YASASVI Scholarship**: For Class 9-12 students up to ₹1,25,000/year.
+- **INSPIRE Scholarship (DST)**: review the current official eligibility, selection route, eligible course, and award amount.
+- **PM YASASVI Scholarship**: check the current scheme notice for eligible classes, categories, income limits, and award amount.
 - **Google STEP & Microsoft Explore Internships**: For 1st & 2nd year college students.
 - **National Overseas Scholarship**: Full financial support for students pursuing Master's and PhD abroad.
 
