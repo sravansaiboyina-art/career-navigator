@@ -18,6 +18,11 @@ on:
       - main
     paths:
       - "career navigator/**"
+      - "backend/**"
+      - "scripts/**"
+      - "package.json"
+      - "README.md"
+      - ".gitignore"
       - ".github/workflows/career-navigator-build.yml"
 
 jobs:
