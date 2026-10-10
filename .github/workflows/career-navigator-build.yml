@@ -36,3 +36,18 @@ jobs:
         run: npm test
       - name: Build demo
         run: npm run build
+      - name: Install browser-test runtime (CI only)
+        run: npm install --no-save --no-package-lock playwright
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run browser smoke tests
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/career-navigator-preview.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/ >/dev/null || { cat /tmp/career-navigator-preview.log; exit 1; }
+          node tests/e2e-smoke.mjs
