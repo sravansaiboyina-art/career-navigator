@@ -18,6 +18,8 @@ import { renderSidebar } from './components/Sidebar.js';
 
 import { renderLanding } from './pages/Landing.js';
 import { renderAuth } from './pages/Auth.js';
+import { renderForgotPassword } from './pages/ForgotPassword.js';
+import { renderResetPassword } from './pages/ResetPassword.js';
 import { renderOnboarding } from './pages/Onboarding.js';
 import { renderProfile } from './pages/Profile.js';
 import { renderDashboard } from './pages/Dashboard.js';
@@ -193,6 +195,14 @@ function setupRoutes() {
 
   router.register('/signup', () => {
     setPage(renderAuth({ mode: 'signup' }), '/signup');
+  });
+
+  router.register('/forgot-password', () => {
+    setPage(renderForgotPassword(), '/forgot-password');
+  });
+
+  router.register('/reset-password', (path, params) => {
+    setPage(renderResetPassword(params.token || ''), '/reset-password');
   });
 
   // Student Onboarding
