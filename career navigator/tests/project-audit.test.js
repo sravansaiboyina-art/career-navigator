@@ -203,3 +203,33 @@ test('startup handles required data fetch failures with a retry screen', () => {
   assert.ok(main.includes('renderStartupError()'));
   assert.ok(main.includes('startup-retry'));
 });
+
+test('demo database stores password hashes rather than plaintext and validates registrations', () => {
+  const database = read('src/db/index.js');
+  assert.ok(database.includes('PBKDF2-SHA-256'));
+  assert.ok(database.includes('passwordHash'));
+  assert.ok(database.includes('passwordSalt'));
+  assert.ok(database.includes('deriveBits'));
+  assert.ok(database.includes('delete migrated.password'));
+  assert.ok(!database.includes('password: userData.password'));
+  assert.ok(database.includes('Password must be between 8 and 128 characters.'));
+  assert.ok(database.includes('An account with this email already exists.'));
+});
+
+test('new accounts initialize independent progress records and login returns no password material', () => {
+  const database = read('src/db/index.js');
+  assert.ok(database.includes('return { user: publicUser(user), profile, progress }'));
+  assert.ok(database.includes('profileId: profile.id'));
+  assert.ok(database.includes('trackedExams: []'));
+  assert.ok(database.includes('await this.delete(COLLECTIONS.USERS, userId).catch'));
+  assert.ok(database.includes('Object.assign(user, migrated)'));
+});
+
+test('profile export and session APIs avoid retaining the submitted password', () => {
+  const store = read('src/store.js');
+  const auth = read('src/pages/Auth.js');
+  assert.ok(store.includes('function safeSessionUser(user)'));
+  assert.ok(store.includes('const { id, name, email, role, createdAt } = user'));
+  assert.ok(auth.includes('autocomplete="new-password"'));
+  assert.ok(auth.includes('minlength="8"'));
+});
