@@ -120,6 +120,6 @@ GitHub Actions checks:
 
 ## What still requires deployment configuration
 
-This repository now contains an actual backend and local persistent SQLite database. To run it locally, no hosted database credential is required. For a public deployment, configure HTTPS, persistent storage for SQLite or migrate to a managed database, set a trusted frontend origin, configure `GEMINI_API_KEY` privately if desired, and run the backend behind a same-origin reverse proxy (recommended for cookie sessions). Password recovery, email verification, monitoring, and a managed production identity solution are not configured yet.
+This repository now contains an actual backend and local persistent SQLite database. To run it locally, no hosted database credential is required. For a public deployment, configure HTTPS, persistent storage for SQLite or migrate to a managed database, set a trusted frontend origin, configure `GEMINI_API_KEY` privately if desired, and run the backend behind a same-origin reverse proxy (recommended for cookie sessions). Password reset is implemented with expiring single-use tokens, session revocation, and a generic response that avoids account enumeration; email is sent only when SMTP settings are configured. Email verification, monitoring, and a managed production identity solution are not configured yet.
 
 Exam and scholarship windows in the datasets are informational estimates, not live government-portal availability checks. Always confirm the current official notification before applying.
