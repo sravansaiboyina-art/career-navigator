@@ -233,3 +233,48 @@ test('profile export and session APIs avoid retaining the submitted password', (
   assert.ok(auth.includes('autocomplete="new-password"'));
   assert.ok(auth.includes('minlength="8"'));
 });
+
+test('database registration stores a salted PBKDF2 hash and login upgrades/returns safe account data', async () => {
+  const data = new Map();
+  globalThis.localStorage = {
+    getItem(key) { return data.has(key) ? data.get(key) : null; },
+    setItem(key, value) { data.set(key, String(value)); },
+    removeItem(key) { data.delete(key); },
+    clear() { data.clear(); }
+  };
+  globalThis.window = {};
+  const { db, COLLECTIONS } = await import('../src/db/index.js');
+  await db.connect();
+  const created = await db.register(
+    { name: 'Integration Student', email: ' INTEGRATION@example.test ', password: 'strong-demo-password' },
+    { class: '12', stream: 'science', selectedCareer: 'engineering' }
+  );
+
+  assert.equal(created.user.email, 'integration@example.test');
+  assert.equal('password' in created.user, false);
+  assert.equal('passwordHash' in created.user, false);
+  assert.equal(created.profile.userId, created.user.id);
+  assert.equal(created.progress.profileId, created.profile.id);
+  assert.deepEqual(created.progress.trackedExams, []);
+
+  const storedUser = await db.get(COLLECTIONS.USERS, created.user.id);
+  assert.equal('password' in storedUser, false);
+  assert.match(storedUser.passwordHash, /^[0-9a-f]{64}$/);
+  assert.match(storedUser.passwordSalt, /^[0-9a-f]{32}$/);
+  assert.notEqual(storedUser.passwordHash, 'strong-demo-password');
+
+  const authenticated = await db.authenticate('INTEGRATION@example.test', 'strong-demo-password');
+  assert.equal(authenticated.user.id, created.user.id);
+  assert.equal(authenticated.profile.id, created.profile.id);
+  assert.equal(authenticated.progress.profileId, created.profile.id);
+  assert.equal(await db.authenticate('integration@example.test', 'incorrect-password'), null);
+
+  await assert.rejects(
+    db.register({ name: 'X', email: 'not-an-email', password: 'strong-demo-password' }),
+    /name between 2 and 100/
+  );
+  await assert.rejects(
+    db.register({ name: 'Duplicate', email: 'integration@example.test', password: 'strong-demo-password' }),
+    /already exists/
+  );
+});
