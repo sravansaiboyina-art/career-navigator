@@ -278,3 +278,13 @@ test('database registration stores a salted PBKDF2 hash and login upgrades/retur
     /already exists/
   );
 });
+
+test('unknown and malformed career/opportunity detail routes render safe not-found states', () => {
+  const main = read('src/main.js');
+  assert.ok(main.includes("careerId = decodeURIComponent(path.slice('/career/'.length))"));
+  assert.ok(main.includes("opportunityId = decodeURIComponent(path.slice('/opportunity/'.length))"));
+  assert.ok(main.includes('renderCareerDetail(null, exams)'));
+  assert.ok(main.includes('renderOpportunityDetail(null)'));
+  assert.ok(main.includes("catch {\n        careerId = '';"));
+  assert.ok(main.includes("catch {\n        opportunityId = '';"));
+});
