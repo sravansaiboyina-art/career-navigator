@@ -28,7 +28,7 @@ try {
   assert.match(detailsText, /official/i);
 
   await page.locator('#exam-modal-track').click();
-  await page.getByRole('button', { name: /Tracked/ }).click();
+  await page.locator('.tab-btn').filter({ hasText: 'Tracked' }).click();
   assert.equal(await page.locator('.exam-card').count(), 1, 'Tracked tab should show the saved exam');
 
   // Tracking persists after a browser reload.
@@ -37,7 +37,7 @@ try {
   assert.equal(await page.locator('.exam-card').count(), 1, 'Tracked exam should persist after reload');
 
   // Sidebar navigation opens the career explorer; unknown career IDs show a not-found view.
-  await page.locator('.sidebar-nav-item').filter({ hasText: 'Explore Careers' }).click();
+  await page.locator('.sidebar-link').filter({ hasText: 'Explore Careers' }).click();
   await page.waitForFunction(() => window.location.hash === '#/explore');
   await page.getByRole('heading', { name: /Explore Career Pathways/ }).waitFor({ state: 'visible' });
 
