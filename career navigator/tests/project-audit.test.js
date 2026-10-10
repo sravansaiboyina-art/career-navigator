@@ -318,3 +318,35 @@ test('offline AI advice does not present stale numeric cutoffs or scholarship am
   assert.ok(!gemini.includes('₹1,25,000/year'));
   assert.ok(gemini.includes('API quota and terms'));
 });
+
+test('switching student sessions replaces profile and progress instead of carrying data forward', async () => {
+  const data = new Map();
+  globalThis.localStorage = {
+    getItem(key) { return data.has(key) ? data.get(key) : null; },
+    setItem(key, value) { data.set(key, String(value)); },
+    removeItem(key) { data.delete(key); },
+    clear() { data.clear(); }
+  };
+  globalThis.sessionStorage = { removeItem() {}, getItem() { return null; }, setItem() {} };
+  const { store } = await import('../src/store.js');
+
+  store.replaceSession(
+    { id: 'student-one', name: 'Student One', email: 'one@example.test', password: 'not-kept' },
+    { id: 'profile-one', userId: 'student-one', name: 'Student One', class: '11', selectedCareer: 'medicine' },
+    { completedMilestones: ['old-milestone'], savedOpportunities: ['old-opportunity'], trackedExams: ['old-exam'], notes: { old: 'private note' } }
+  );
+  store.replaceSession(
+    { id: 'student-two', name: 'Student Two', email: 'two@example.test' },
+    { id: 'profile-two', userId: 'student-two', name: 'Student Two', class: '8', selectedCareer: 'engineering' },
+    { completedMilestones: ['new-milestone'] }
+  );
+
+  assert.equal(store.getUser().id, 'student-two');
+  assert.equal(store.getProfile().id, 'profile-two');
+  assert.equal(store.getProfile().userId, 'student-two');
+  assert.deepEqual(store.getProgress().completedMilestones, ['new-milestone']);
+  assert.deepEqual(store.getProgress().savedOpportunities, []);
+  assert.deepEqual(store.getProgress().trackedExams, []);
+  assert.deepEqual(store.getProgress().notes, {});
+  assert.equal('password' in store.getUser(), false);
+});
