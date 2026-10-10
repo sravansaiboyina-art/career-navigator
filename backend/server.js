@@ -243,7 +243,7 @@ export function createApp({
     try {
       const body = parseJsonObject(req.body) || {};
       const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
-      if (/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) && email.length <= 254 && sendPasswordResetEmail) {
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254 && sendPasswordResetEmail) {
         const user = database.findUserByEmail(email);
         if (user) {
           const token = crypto.randomBytes(32).toString('base64url');
