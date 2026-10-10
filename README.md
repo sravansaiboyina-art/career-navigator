@@ -101,6 +101,8 @@ npm run build --prefix "career navigator"
 | POST | `/api/auth/login` | Verify credentials and create a session |
 | GET | `/api/auth/me` | Restore current session/account |
 | POST | `/api/auth/logout` | Revoke session |
+| POST | `/api/auth/password-reset/request` | Request a password-reset email (generic response) |
+| POST | `/api/auth/password-reset/confirm` | Set a new password using a single-use token |
 | GET/PUT | `/api/profile` | Read/update the authenticated student's profile |
 | GET/PUT | `/api/progress` | Read/update milestones, notes, tracked exams, and saved opportunities |
 | POST | `/api/ai/chat` | Server-side Gemini proxy when configured |
