@@ -3,7 +3,6 @@ import { db } from '../db/index.js';
 import { store } from '../store.js';
 import { router } from '../router.js';
 import { showToast } from '../components/Toast.js';
-import { DEMO_USERS } from '../db/seed.js';
 
 let authMode = 'login'; // 'login' | 'signup'
 
@@ -90,7 +89,7 @@ export function renderAuth(params = {}) {
         </div>
 
         <div class="auth-footer mt-6 text-center text-xs text-muted">
-          By signing in, you agree to our <a href="#/" class="text-accent">Terms of Service</a> & <a href="#/" class="text-accent">Privacy Policy</a>
+          <span>Demo prototype: account data is stored in this browser. Password recovery and production account security are not available yet.</span>
         </div>
       </div>
     </div>
@@ -103,16 +102,16 @@ function renderLoginForm() {
   <form onsubmit="window.handleLoginForm(event)" class="flex-col gap-4">
     <div class="form-group">
       <label class="form-label" for="login-email">Email Address</label>
-      <input id="login-email" class="input" type="email" placeholder="e.g. priya@student.in" required autocomplete="username" value="priya@student.in" />
+      <input id="login-email" class="input" type="email" placeholder="e.g. priya@student.in" required autocomplete="username" />
     </div>
 
     <div class="form-group">
       <div class="flex justify-between items-center mb-1">
         <label class="form-label mb-0" for="login-password">Password</label>
-        <a href="javascript:void(0)" onclick="alert('For demo accounts, use password: password123')" class="text-xs text-muted hover-underline">Forgot password?</a>
+        <a href="#/auth" onclick="event.preventDefault();window.showPasswordResetInfo()" class="text-xs text-muted hover-underline">Forgot password?</a>
       </div>
       <div class="password-input-wrapper" style="position:relative;">
-        <input id="login-password" class="input w-full" type="password" placeholder="••••••••" required autocomplete="current-password" value="password123" />
+        <input id="login-password" class="input w-full" type="password" placeholder="••••••••" required autocomplete="current-password" />
         <button type="button" class="password-toggle-btn" onclick="window.togglePasswordVisibility('login-password')">👁️</button>
       </div>
     </div>
@@ -157,7 +156,7 @@ function renderSignupForm() {
           <option value="11" selected>Class 11</option>
           <option value="12">Class 12</option>
           <option value="ug">Undergraduate (UG)</option>
-          <option value="grad">Postgraduate (PG)</option>
+          <option value="grad">Graduate (degree completed)</option>
         </select>
       </div>
 
@@ -173,9 +172,9 @@ function renderSignupForm() {
     </div>
 
     <div class="form-group">
-      <label class="form-label" for="signup-password">Password (min 6 characters) *</label>
+      <label class="form-label" for="signup-password">Password (min 8 characters) *</label>
       <div class="password-input-wrapper" style="position:relative;">
-        <input id="signup-password" class="input w-full" type="password" placeholder="••••••••" required minlength="6" />
+        <input id="signup-password" class="input w-full" type="password" placeholder="••••••••" required minlength="8" autocomplete="new-password" />
         <button type="button" class="password-toggle-btn" onclick="window.togglePasswordVisibility('signup-password')">👁️</button>
       </div>
     </div>
@@ -194,10 +193,15 @@ if (typeof window !== 'undefined') {
     document.querySelectorAll('.auth-tab').forEach(t => {
       t.classList.toggle('active', t.textContent.toLowerCase().includes(mode === 'login' ? 'log in' : 'create'));
     });
+    if (!['login', 'signup'].includes(mode)) return;
     const container = document.getElementById('auth-form-container');
     if (container) {
       container.innerHTML = mode === 'login' ? renderLoginForm() : renderSignupForm();
     }
+  };
+
+  window.showPasswordResetInfo = () => {
+    showToast('Password recovery is not part of this demo yet. Use a one-click demo persona or create a new account.', 'info');
   };
 
   window.togglePasswordVisibility = (inputId) => {
@@ -225,17 +229,11 @@ if (typeof window !== 'undefined') {
     try {
       const result = await db.authenticate(email, password);
       if (!result) {
-        showToast('Invalid email or password. Try quick demo login or demo password: password123', 'error');
+        showToast('Invalid email or password. Try one-click demo login or create a new account.', 'error');
         return;
       }
 
-      store.setUser(result.user);
-      if (result.profile) {
-        store.saveProfile(result.profile);
-      }
-      if (result.progress) {
-        store.saveProgress(result.progress);
-      }
+      store.replaceSession(result.user, result.profile, result.progress);
 
       showToast(`Welcome back, ${result.user.name}! 👋`, 'success');
       router.navigate(result.profile ? '/dashboard' : '/onboarding');
@@ -264,9 +262,7 @@ if (typeof window !== 'undefined') {
         { class: cls, stream: stream }
       );
 
-      store.setUser(result.user);
-      store.saveProfile(result.profile);
-      store.saveProgress(result.progress);
+      store.replaceSession(result.user, result.profile, result.progress);
 
       showToast(`Account created successfully! Welcome, ${name}! 🎉`, 'success');
       // Navigate to onboarding to pick interests and career match

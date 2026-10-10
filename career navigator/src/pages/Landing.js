@@ -1,8 +1,22 @@
 // pages/Landing.js
-import { store } from '../store.js';
-import { router } from '../router.js';
+import { escapeHtml } from '../utils/safeHtml.js';
 
-export function renderLanding() {
+export function renderLanding(careers = [], exams = [], opportunities = []) {
+  const scholarshipCount = opportunities.filter((item) => item.type === 'scholarship').length;
+  const featuredExams = ['neet-ug', 'jee-main', 'gate'].map((id) => exams.find((exam) => exam.id === id)).filter(Boolean);
+  const featuredOpportunities = opportunities.filter((opportunity) => ['scholarship', 'internship', 'govt-job'].includes(opportunity.type)).slice(0, 1);
+  const previewCards = [
+    ...featuredExams.slice(0, 2).map((exam) => ({
+      emoji: exam.emoji || '📅',
+      title: exam.title || 'Exam',
+      detail: `Expected period: ${exam.examMonth || 'Not announced'}`
+    })),
+    ...featuredOpportunities.slice(0, 1).map((opportunity) => ({
+      emoji: opportunity.emoji || '🎯',
+      title: opportunity.title || 'Opportunity',
+      detail: `Typical window: ${opportunity.deadline?.month || 'Not announced'}`
+    }))
+  ].slice(0, 3);
   return `
 <div class="hero-section hero-bg page-enter">
   <!-- Background Orbs -->
@@ -35,11 +49,8 @@ export function renderLanding() {
             Explore Careers
           </button>
         </div>
-        <div class="animate-fade-up delay-4" style="margin-top:2rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;gap:0.5rem;">
-            ${[...Array(5)].map(()=>`<svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`).join('')}
-          </div>
-          <span class="text-sm text-muted">Trusted by 10,000+ students across India</span>
+        <div class="animate-fade-up delay-4 text-sm text-muted" style="margin-top:2rem;max-width:36rem;">
+          Demo preview: save roadmaps, exam plans, and opportunities in this browser. Verify all current deadlines on official websites.
         </div>
       </div>
 
@@ -56,37 +67,37 @@ export function renderLanding() {
             <div class="flex items-center gap-3 mb-4">
               <div style="width:40px;height:40px;background:var(--grad-hero);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;">👤</div>
               <div>
-                <div class="fw-700 font-heading" style="font-size:0.875rem;">Priya Sharma</div>
-                <div class="text-xs text-muted">Class 11 · Science · Medicine</div>
+                <div class="fw-700 font-heading" style="font-size:0.875rem;">Sample Student</div>
+                <div class="text-xs text-muted">Illustrative profile · personalize after sign-in</div>
               </div>
-              <span class="badge badge-green" style="margin-left:auto;">On Track</span>
+              <span class="badge badge-cyan" style="margin-left:auto;">Demo preview</span>
             </div>
             <div style="margin-bottom:0.75rem;">
-              <div class="flex justify-between text-xs text-muted mb-2"><span>NEET Readiness</span><span>72%</span></div>
-              <div class="progress-bar"><div class="progress-fill" style="width:72%;"></div></div>
+              <div class="flex justify-between text-xs text-muted mb-2"><span>Sample roadmap progress</span><span>Illustrative only</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width:42%;"></div></div>
             </div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-top:1rem;">
-              ${[['🏆','NEET UG','May 2027'],['📅','JEE Main','Jan 2027'],['💰','INSPIRE','Nov 2026']].map(([e,t,d])=>`
+              ${previewCards.length ? previewCards.map((item)=>`
                 <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:0.5rem;padding:0.5rem;text-align:center;">
-                  <div style="font-size:1rem;">${e}</div>
-                  <div class="fw-600" style="font-size:0.65rem;margin-top:2px;">${t}</div>
-                  <div class="text-muted" style="font-size:0.6rem;">${d}</div>
-                </div>`).join('')}
+                  <div style="font-size:1rem;">${escapeHtml(item.emoji)}</div>
+                  <div class="fw-600" style="font-size:0.65rem;margin-top:2px;">${escapeHtml(item.title)}</div>
+                  <div class="text-muted" style="font-size:0.6rem;">${escapeHtml(item.detail)}</div>
+                </div>`).join('') : '<p class="text-xs text-muted">Opportunity data will appear here.</p>'}
             </div>
           </div>
           <div style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);border-radius:0.75rem;padding:1rem;">
             <div class="text-xs fw-600" style="color:var(--violet-light);margin-bottom:0.5rem;">🤖 AI Career Assistant</div>
-            <div class="text-sm text-secondary" style="font-style:italic;">"Focus on NCERT Biology Chapter 17 — it carries 12% weight in NEET. Start revision this week!"</div>
+            <div class="text-sm text-secondary">Try asking about planning a weekly study schedule, comparing career pathways, or preparing for an exam. Advice is informational; check official notices for rules and dates.</div>
           </div>
         </div>
         <!-- Floating badges -->
         <div class="animate-float" style="position:absolute;top:-20px;right:-20px;background:var(--bg-card);border:1px solid var(--border-accent);border-radius:0.75rem;padding:0.75rem 1rem;font-size:0.75rem;display:flex;align-items:center;gap:0.5rem;box-shadow:var(--shadow-glow);">
           <span style="font-size:1rem;">🎯</span>
-          <div><div class="fw-700">7 Careers</div><div class="text-muted" style="font-size:0.65rem;">Mapped for India</div></div>
+          <div><div class="fw-700">${careers.length} Career Paths</div><div class="text-muted" style="font-size:0.65rem;">Available in this demo</div></div>
         </div>
         <div class="animate-float delay-3" style="position:absolute;bottom:-20px;left:-20px;background:var(--bg-card);border:1px solid rgba(16,185,129,0.3);border-radius:0.75rem;padding:0.75rem 1rem;font-size:0.75rem;display:flex;align-items:center;gap:0.5rem;">
           <span style="font-size:1rem;">✅</span>
-          <div><div class="fw-700 text-green">Milestone Done!</div><div class="text-muted" style="font-size:0.65rem;">NCERT Biology XI</div></div>
+          <div><div class="fw-700 text-green">Milestones</div><div class="text-muted" style="font-size:0.65rem;">Track your own progress after setup</div></div>
         </div>
       </div>
     </div>
@@ -97,10 +108,15 @@ export function renderLanding() {
 <div style="background:var(--bg-secondary);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:2rem 0;">
   <div class="container">
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;text-align:center;">
-      ${[['7','Career Paths'],['30+','Exams Tracked'],['20+','Scholarships'],['Class 6–PG','All Stages']].map(([v,l])=>`
+      ${[
+        [String(careers.length), 'Career Paths'],
+        [String(exams.length), 'Exam Records'],
+        [String(scholarshipCount), 'Scholarship Records'],
+        ['Class 6–Graduate', 'Student Stages']
+      ].map(([value, label])=>`
         <div class="reveal">
-          <div class="stat-value">${v}</div>
-          <div class="stat-label">${l}</div>
+          <div class="stat-value">${escapeHtml(value)}</div>
+          <div class="stat-label">${escapeHtml(label)}</div>
         </div>`).join('')}
     </div>
   </div>
@@ -115,8 +131,8 @@ export function renderLanding() {
       <p class="mt-4" style="max-width:500px;margin:1rem auto 0;">From NEET to UPSC, we cover all major Indian career paths with stage-by-stage guidance.</p>
     </div>
     <div class="career-pill-row reveal">
-      ${[['🩺','Medicine / NEET'],['💻','Software Engineering'],['🎓','IIT / NIT / JEE'],['⚙️','GATE / M.Tech'],['🏛️','UPSC Civil Services'],['📋','SSC CGL'],['🏦','Banking (IBPS / SBI)']].map(([e,t])=>`
-        <div class="career-pill">${e} ${t}</div>`).join('')}
+      ${careers.map((career)=>`
+        <div class="career-pill">${escapeHtml(career.emoji || '🎯')} ${escapeHtml(career.title || 'Career')}</div>`).join('')}
     </div>
   </div>
 </div>
@@ -131,10 +147,10 @@ export function renderLanding() {
     <div class="feature-grid">
       ${[
         ['🗺️','Personal Roadmap','Stage-by-stage milestones tailored to your class, stream, and career goal.','rgba(124,58,237,0.15)'],
-        ['📅','Exam Calendar','Never miss a deadline. Track NEET, JEE, UPSC, GATE and 30+ more exams.','rgba(6,182,212,0.15)'],
-        ['💡','Smart Eligibility','Know exactly which exams and scholarships you qualify for right now.','rgba(245,158,11,0.15)'],
+        ['📅','Exam Calendar','Review exam information and expected application windows. Verify live dates on official portals.','rgba(6,182,212,0.15)'],
+        ['💡','Smart Eligibility','Review eligibility criteria and compare requirements with your current education stage.','rgba(245,158,11,0.15)'],
         ['🤖','AI Career Assistant','Ask anything — get personalized, India-specific guidance powered by Gemini AI.','rgba(236,72,153,0.15)'],
-        ['🎓','Scholarships & More','Discover INSPIRE, NTSE, PM YASASVI and 20+ funding opportunities.','rgba(16,185,129,0.15)'],
+        ['🎓','Scholarships & More','Explore scholarship and funding records; confirm each programme’s current status with its official source.','rgba(16,185,129,0.15)'],
         ['📊','Progress Tracker','Visualize your growth with milestone completions and interactive charts.','rgba(239,68,68,0.15)'],
       ].map(([icon,title,desc,bg],i)=>`
         <div class="feature-card reveal delay-${i+1}">
@@ -154,7 +170,7 @@ export function renderLanding() {
       <div class="orb orb-cyan" style="width:200px;height:200px;bottom:-50px;right:-50px;opacity:0.15;"></div>
       <div style="position:relative;z-index:1;">
         <h2 style="margin-bottom:1rem;">Ready to navigate your future?</h2>
-        <p style="max-width:450px;margin:0 auto 2rem;">Join thousands of students who have already mapped their career journey with Career Navigator.</p>
+        <p style="max-width:450px;margin:0 auto 2rem;">Create a profile to start a personal roadmap. Demo profile and progress data are stored in this browser.</p>
         <button class="btn btn-primary btn-lg" onclick="window.navigateTo('/onboarding')">
           Get Started — It's Free
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>

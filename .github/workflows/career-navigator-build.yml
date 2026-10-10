@@ -1,0 +1,59 @@
+name: Career Navigator build
+
+on:
+  push:
+    branches:
+      - main
+      - fix/exam-tracker-details
+    paths:
+      - "career navigator/**"
+      - ".github/workflows/career-navigator-build.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "career navigator/**"
+      - ".github/workflows/career-navigator-build.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: career navigator
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: "career navigator/package-lock.json"
+      - name: Install dependencies
+        run: npm ci
+      - name: Report dependency audit findings
+        run: |
+          npm audit --json > /tmp/npm-audit.json || true
+          node --input-type=module -e 'import fs from "node:fs"; const report=JSON.parse(fs.readFileSync("/tmp/npm-audit.json","utf8")); const items=Object.entries(report.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,isDirect:v.isDirect,range:v.range,fixAvailable:v.fixAvailable,via:(v.via||[]).map(item=>typeof item==="string"?item:{title:item.title,url:item.url,range:item.range})})); console.log(JSON.stringify({summary:report.metadata?.vulnerabilities,items},null,2));'
+      - name: Fail on high or critical dependency advisories
+        run: npm audit --audit-level=high
+      - name: Run project audit tests
+        run: npm test
+      - name: Build demo
+        run: npm run build
+      - name: Install browser-test runtime (CI only)
+        run: npm install --no-save --no-package-lock playwright
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run browser smoke tests
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/career-navigator-preview.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/ >/dev/null || { cat /tmp/career-navigator-preview.log; exit 1; }
+          node tests/e2e-smoke.mjs

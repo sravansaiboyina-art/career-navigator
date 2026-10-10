@@ -1,7 +1,8 @@
 // pages/Roadmap.js — Full Career Roadmap Module with Visual Timeline
 import { store } from '../store.js';
-import { showToast } from '../main.js';
+import { showToast } from '../components/Toast.js';
 import { CAREER_ROADMAPS, ROADMAP_STAGES, mapClassToStage } from '../data/roadmapData.js';
+import { escapeHtml } from '../utils/safeHtml.js';
 
 // ── State ──────────────────────────────────────────────────────
 let activeCareer = null;
@@ -23,7 +24,7 @@ export function renderRoadmap(careers) {
 
   // Determine student's current stage
   const currentStageId = mapClassToStage(profile?.class || '11');
-  if (!activeStageId) activeStageId = currentStageId;
+  activeStageId = currentStageId;
 
   // Build overall progress across all milestones
   const allRoadmapMilestones = careerData
@@ -374,7 +375,7 @@ function renderStageDetail(stageId, displayData, progress, currentStageId) {
                     <span class="badge ${m.priority === 'high' ? 'badge-red' : m.priority === 'medium' ? 'badge-amber' : 'badge-green'}" style="font-size:0.65rem;">${m.priority} priority</span>
                     <span class="text-xs text-muted">~${m.weeks} weeks</span>
                   </div>
-                  ${note ? `<div class="milestone-note-chip">📝 ${note}</div>` : ''}
+                  ${note ? `<div class="milestone-note-chip">📝 ${escapeHtml(note)}</div>` : ''}
                 </div>
                 <button class="btn btn-ghost btn-sm milestone-note-btn"
                         onclick="event.stopPropagation(); window.addNote('${m.id}', '${m.title.replace(/'/g, '\\\'').replace(/"/g, '&quot;')}')"
@@ -485,6 +486,9 @@ window.toggleMilestone = (id) => {
 
   // Update progress numbers in stage nav
   _refreshStageNavProgress();
+  _refreshRoadmapProgressRing();
+  const timeline = document.getElementById('roadmap-full-timeline');
+  timeline?.querySelectorAll('.reveal').forEach((card) => card.classList.add('visible'));
 
   showToast(isComplete ? '✅ Milestone completed! Great work!' : '↩️ Milestone unmarked', isComplete ? 'success' : 'info');
 };
@@ -587,6 +591,7 @@ window.switchRoadmapCareer = (careerId) => {
   const fullTimeline = document.getElementById('roadmap-full-timeline');
   if (fullTimeline) {
     fullTimeline.innerHTML = renderFullTimeline(displayData, progress, currentStageId);
+    fullTimeline.querySelectorAll('.reveal').forEach((card) => card.classList.add('visible'));
   }
 
   // Update progress ring
@@ -688,4 +693,13 @@ function _refreshStageNavProgress() {
     if (fill) fill.style.width = pct + '%';
     if (count) count.textContent = `${done}/${mils.length}`;
   });
+}
+
+function _refreshRoadmapProgressRing() {
+  const displayData = _getCurrentDisplayData();
+  const allMilestones = Object.values(displayData.stages || {}).flatMap((stage) => stage?.milestones || []);
+  const completed = allMilestones.filter((milestone) => store.isMilestoneComplete(milestone.id)).length;
+  const pct = allMilestones.length ? Math.round((completed / allMilestones.length) * 100) : 0;
+  const ring = document.querySelector('.roadmap-ring-wrap');
+  if (ring) ring.outerHTML = renderProgressRing(pct, completed, allMilestones.length);
 }

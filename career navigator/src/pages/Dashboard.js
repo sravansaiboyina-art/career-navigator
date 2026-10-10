@@ -1,5 +1,7 @@
 // pages/Dashboard.js
 import { getCurrentStageAdvice } from '../utils/careerEngine.js';
+import { CAREER_ROADMAPS, mapClassToStage } from '../data/roadmapData.js';
+import { escapeHtml } from '../utils/safeHtml.js';
 
 import { store } from '../store.js';
 
@@ -8,14 +10,16 @@ export function renderDashboard(careers, exams, opportunities) {
   const progress = store.getProgress();
   const career = careers.find(c => c.id === profile.selectedCareer) || careers[0];
   const currentAdvice = getCurrentStageAdvice(profile, career);
-  const stageData = career?.stages?.[profile.class] || career?.stages?.['ug'];
+  const roadmap = CAREER_ROADMAPS[profile?.selectedCareer];
+  const currentStageId = mapClassToStage(String(profile?.class || '11'));
+  const stageData = roadmap?.stages?.[currentStageId];
   const milestones = stageData?.milestones || [];
   const completed = milestones.filter(m => progress.completedMilestones.includes(m.id)).length;
   const pct = milestones.length ? Math.round((completed / milestones.length) * 100) : 0;
 
 
 
-  // Upcoming exams (relevant + eligible)
+  // Show exams matched to the student's current education stage; this is not a complete eligibility check.
   const myExams = exams.filter(e =>
     (e.career || []).includes(profile.selectedCareer) &&
     store.isStageEligible(profile.class, e.eligibility?.minClass || '6')
@@ -44,10 +48,10 @@ export function renderDashboard(careers, exams, opportunities) {
         <div class="flex items-center gap-4 flex-wrap justify-between">
           <div>
             <div class="text-sm text-muted mb-1">${greeting} 👋</div>
-            <h2 style="font-size:1.75rem;margin-bottom:0.25rem;">${profile.name}</h2>
+            <h2 style="font-size:1.75rem;margin-bottom:0.25rem;">${escapeHtml(profile.name || 'Student')}</h2>
             <div class="flex gap-3 flex-wrap mt-2">
               <span class="badge badge-violet">📚 ${stageLabel}</span>
-              ${profile.stream !== 'na' ? `<span class="badge badge-cyan">${profile.stream.charAt(0).toUpperCase() + profile.stream.slice(1)} Stream</span>` : ''}
+              ${profile.stream !== 'na' ? `<span class="badge badge-cyan">${escapeHtml(profile.stream.charAt(0).toUpperCase() + profile.stream.slice(1))} Stream</span>` : ''}
               <span class="badge badge-amber">${career?.emoji} ${career?.title}</span>
             </div>
           </div>
@@ -163,9 +167,10 @@ export function renderDashboard(careers, exams, opportunities) {
       <!-- Upcoming Exams -->
       <div class="card reveal delay-1">
         <div class="flex items-center justify-between mb-4">
-          <h4>📅 Upcoming Exams</h4>
+          <h4>📅 Exam suggestions</h4>
           <button class="btn btn-ghost btn-sm" onclick="window.navigateTo('/exams')">View all →</button>
         </div>
+        <p class="text-xs text-muted mb-4">Matched by career and education stage only. Confirm age, subjects, marks, and current rules on the official portal.</p>
         ${myExams.length === 0
       ? `<div class="empty-state" style="padding:1.5rem;"><div class="empty-icon">📚</div><p>No exams for your current stage yet.</p></div>`
       : myExams.map(e => `
@@ -224,7 +229,9 @@ window.toggleMilestoneFromDash = (id, el) => {
   const progress = store.getProgress();
   const careers = window.__careers || [];
   const career = careers.find(c => c.id === profile?.selectedCareer) || careers[0];
-  const stageData = career?.stages?.[profile?.class] || career?.stages?.['ug'];
+  const roadmap = CAREER_ROADMAPS[profile?.selectedCareer];
+  const stageId = mapClassToStage(String(profile?.class || '11'));
+  const stageData = roadmap?.stages?.[stageId];
   const milestones = stageData?.milestones || [];
   const completed = milestones.filter(m => progress.completedMilestones.includes(m.id)).length;
   const pct = milestones.length ? Math.round((completed / milestones.length) * 100) : 0;

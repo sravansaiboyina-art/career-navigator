@@ -1,165 +1,264 @@
 // pages/Exams.js
 import { store } from '../store.js';
-import { modal } from '../components/Modal.js';
+import { Modal } from '../components/Modal.js';
+
 let activeTab = 'my';
 let activeFilter = 'all';
 
-export function renderExams(exams) {
+const FILTERS = [
+  ['all', 'All'],
+  ['entrance', 'Entrance'],
+  ['postgrad-entrance', 'Postgraduate Entrance'],
+  ['civil-services', 'Civil Services'],
+  ['govt-exam', 'Govt Exams'],
+  ['banking', 'Banking'],
+  ['scholarship-exam', 'Scholarships']
+];
+
+function escapeHtml(value = '') {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[char]);
+}
+
+function safeUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return ['https:', 'http:'].includes(url.protocol) ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function examIsEligible(exam, profile) {
+  return store.isStageEligible(
+    profile?.class || 'ug',
+    exam.eligibility?.minClass || '6'
+  );
+}
+
+function getExamLists(exams) {
   const profile = store.getProfile();
-
-  const myExams = exams.filter(e =>
-    (e.career||[]).includes(profile?.selectedCareer) &&
-    store.isStageEligible(profile?.class||'ug', e.eligibility?.minClass||'6')
+  const careerExams = exams.filter((exam) =>
+    (exam.career || []).includes(profile?.selectedCareer)
   );
+  return {
+    myExams: careerExams.filter((exam) => examIsEligible(exam, profile)),
+    upcomingExams: careerExams.filter((exam) => !examIsEligible(exam, profile)),
+    trackedExams: exams.filter((exam) => store.isExamTracked(exam.id))
+  };
+}
 
-  const upcomingExams = exams.filter(e =>
-    (e.career||[]).includes(profile?.selectedCareer) &&
-    !store.isStageEligible(profile?.class||'ug', e.eligibility?.minClass||'6')
-  );
-
+export function renderExams(exams) {
+  const { myExams, upcomingExams, trackedExams } = getExamLists(exams);
   return `
 <div class="page-wrapper page-enter">
   <div class="container" style="padding-top:calc(var(--nav-height) + 2rem);padding-bottom:4rem;">
-
     <div class="page-header">
       <div class="page-header-inner">
         <div>
           <h2>📅 Exam Tracker</h2>
-          <p class="mt-2">Track all exams relevant to your career path and eligibility.</p>
+          <p class="mt-2">Explore exams matched to your career and education stage, and save exams you plan to take.</p>
+          <p class="text-xs text-muted mt-1">Stage matching is not full eligibility: check age, subjects, marks, and official requirements. Application months are estimates.</p>
         </div>
         <div class="flex gap-3 items-center">
-          <span class="badge badge-violet">${myExams.length} eligible now</span>
-          <span class="badge badge-cyan">${upcomingExams.length} upcoming</span>
+          <span class="badge badge-violet">${myExams.length} stage matches</span>
+          <span class="badge badge-cyan">${upcomingExams.length} future-stage</span>
         </div>
       </div>
     </div>
 
-    <!-- Tabs -->
     <div class="flex gap-6 mb-8 flex-wrap items-center justify-between">
       <div class="tabs">
-        <button class="tab-btn ${activeTab==='my'?'active':''}" onclick="window.setExamTab('my')">My Exams (${myExams.length})</button>
-        <button class="tab-btn ${activeTab==='upcoming'?'active':''}" onclick="window.setExamTab('upcoming')">Upcoming (${upcomingExams.length})</button>
-        <button class="tab-btn ${activeTab==='all'?'active':''}" onclick="window.setExamTab('all')">All Exams (${exams.length})</button>
+        <button class="tab-btn ${activeTab === 'my' ? 'active' : ''}" onclick="window.setExamTab('my')">My Exams (${myExams.length})</button>
+        <button class="tab-btn ${activeTab === 'upcoming' ? 'active' : ''}" onclick="window.setExamTab('upcoming')">Future-stage (${upcomingExams.length})</button>
+        <button class="tab-btn ${activeTab === 'tracked' ? 'active' : ''}" onclick="window.setExamTab('tracked')">Tracked (${trackedExams.length})</button>
+        <button class="tab-btn ${activeTab === 'all' ? 'active' : ''}" onclick="window.setExamTab('all')">All Exams (${exams.length})</button>
       </div>
       <div class="filter-bar">
-        ${[['all','All'],['entrance','Entrance'],['civil-services','Civil Services'],['govt-exam','Govt Exams'],['banking','Banking'],['scholarship-exam','Scholarships']].map(([f,l]) =>
-          `<div class="filter-chip ${activeFilter===f?'active':''}" onclick="window.setExamFilter('${f}')">${l}</div>`
+        ${FILTERS.map(([filter, label]) =>
+          `<button type="button" class="filter-chip ${activeFilter === filter ? 'active' : ''}" onclick="window.setExamFilter('${filter}')">${label}</button>`
         ).join('')}
       </div>
     </div>
 
-    <div id="exams-content">
-      ${renderExamList(exams, myExams, upcomingExams)}
-    </div>
-
+    <div id="exams-content">${renderExamList(exams, myExams, upcomingExams, trackedExams)}</div>
   </div>
 </div>`;
 }
 
-function renderExamList(exams, myExams, upcomingExams) {
-  let list = activeTab === 'my' ? myExams : activeTab === 'upcoming' ? upcomingExams : exams;
-  if (activeFilter !== 'all') list = list.filter(e => e.category === activeFilter);
+function renderExamList(exams, myExams, upcomingExams, trackedExams) {
+  let list = activeTab === 'my' ? myExams
+    : activeTab === 'upcoming' ? upcomingExams
+    : activeTab === 'tracked' ? trackedExams
+    : exams;
+  if (activeFilter !== 'all') list = list.filter((exam) => exam.category === activeFilter);
 
-  if (list.length === 0) {
-    return `<div class="empty-state"><div class="empty-icon">📚</div><h3>No exams in this category</h3><p>Try a different filter or tab.</p></div>`;
+  if (!list.length) {
+    return `<div class="empty-state"><div class="empty-icon">📚</div><h3>${activeTab === 'tracked' ? 'No tracked exams yet' : 'No exams in this category'}</h3><p>${activeTab === 'tracked' ? 'Open an exam’s details and select “Track this exam” to save it here.' : 'Try a different filter or tab.'}</p></div>`;
   }
-
-  return `<div class="grid-auto">${list.map((e,i) => renderExamCard(e, i)).join('')}</div>`;
+  return `<div class="grid-auto">${list.map((exam, index) => renderExamCard(exam, index)).join('')}</div>`;
 }
 
-function renderExamCard(e, i) {
+function renderExamCard(exam, index) {
+  const officialUrl = safeUrl(exam.officialLink);
+  const tracked = store.isExamTracked(exam.id);
+  const difficulty = exam.difficulty || 'Not specified';
+  const difficultyClass = /extremely high|very high/i.test(difficulty) ? 'badge-red'
+    : /high/i.test(difficulty) ? 'badge-amber' : 'badge-green';
+  const topics = (exam.importantTopics || []).slice(0, 4);
+  const applicationMonth = exam.applicationWindow?.approxMonth || 'Not announced';
+  const statusLabel = exam.status === 'legacy'
+    ? 'Legacy entry — current cycle unverified'
+    : exam.status === 'notice-only'
+      ? 'Official notice referenced — live status not checked'
+      : '';
+  const statusClass = exam.status === 'legacy' ? 'badge-amber' : 'badge-cyan';
+
   return `
-<div class="exam-card reveal delay-${Math.min(i+1,8)}">
+<article class="exam-card reveal delay-${Math.min(index + 1, 8)}">
   <div class="exam-card-header">
     <div>
       <div class="flex items-center gap-2 mb-1">
-        <span style="font-size:1.25rem;">${e.emoji}</span>
-        <div class="exam-card-title">${e.title}</div>
+        <span style="font-size:1.25rem;">${escapeHtml(exam.emoji || '📝')}</span>
+        <div class="exam-card-title">${escapeHtml(exam.title || 'Exam')}</div>
       </div>
-      <div class="text-xs text-muted">${e.fullName}</div>
+      <div class="text-xs text-muted">${escapeHtml(exam.fullName || '')}</div>
+      ${statusLabel ? `<div class="badge ${statusClass} mt-2">${escapeHtml(statusLabel)}</div>` : ''}
     </div>
-    <span class="badge ${e.difficulty==='Extremely High'?'badge-red':e.difficulty==='Very High'?'badge-red':e.difficulty==='High'?'badge-amber':'badge-green'}" style="white-space:nowrap;">
-      ${e.difficulty}
-    </span>
+    <span class="badge ${difficultyClass}" style="white-space:nowrap;">${escapeHtml(difficulty)}</span>
   </div>
-
   <div class="exam-card-body">
     <div class="grid-2 gap-3 mb-3">
       <div style="background:var(--bg-glass);border-radius:var(--radius-md);padding:0.625rem;">
-        <div class="text-xs text-muted">Exam Month</div>
-        <div class="fw-600 text-sm mt-1">📅 ${e.examMonth}</div>
+        <div class="text-xs text-muted">Expected exam period</div>
+        <div class="fw-600 text-sm mt-1">📅 ${escapeHtml(exam.examMonth || 'Not announced')}</div>
       </div>
       <div style="background:var(--bg-glass);border-radius:var(--radius-md);padding:0.625rem;">
-        <div class="text-xs text-muted">Conducted By</div>
-        <div class="fw-600 text-sm mt-1">🏢 ${e.conductedBy}</div>
+        <div class="text-xs text-muted">Conducted by</div>
+        <div class="fw-600 text-sm mt-1">🏢 ${escapeHtml(exam.conductedBy || 'Not specified')}</div>
       </div>
     </div>
-
     <div style="margin-bottom:0.75rem;">
-      <div class="text-xs text-muted mb-1">Eligibility</div>
-      <div class="text-sm">
-        ${e.eligibility?.minClass ? `Min: ${e.eligibility.minClass === 'ug' ? 'Graduation' : e.eligibility.minClass === 'grad' ? 'Post-Graduation' : 'Class ' + e.eligibility.minClass}` : 'Open to all'}
-        ${e.eligibility?.minAge ? ` · Age: ${e.eligibility.minAge}+` : ''}
-        ${e.eligibility?.minPercent ? ` · ${e.eligibility.minPercent}% min` : ''}
-        ${e.eligibility?.additionalCriteria ? `<div class="text-xs text-muted mt-1">${e.eligibility.additionalCriteria}</div>` : ''}
-      </div>
+      <div class="text-xs text-muted mb-1">Eligibility summary</div>
+      <div class="text-sm">${escapeHtml(formatEligibility(exam.eligibility))}</div>
     </div>
-
-    <div class="text-xs text-muted mb-2">📝 Key Topics:</div>
+    <div class="text-xs text-muted mb-2">📝 Key topics</div>
     <div class="flex flex-wrap gap-1 mb-3">
-      ${(e.importantTopics||[]).slice(0,4).map(t => `<span class="tag" style="font-size:0.65rem;">${t}</span>`).join('')}
+      ${topics.map((topic) => `<span class="tag" style="font-size:0.65rem;">${escapeHtml(topic)}</span>`).join('')}
     </div>
   </div>
-
   <div class="exam-card-footer">
-    <div class="deadline-chip ${e.applicationWindow?.approxMonth === 'February' || e.applicationWindow?.approxMonth === 'January' ? 'deadline-open' : 'deadline-soon'}">
-      📋 Apply: ${e.applicationWindow?.approxMonth || 'TBA'}
+    <div>
+      <div class="deadline-chip deadline-soon">📋 Expected application: ${escapeHtml(applicationMonth)}</div>
+      <div class="text-xs text-muted mt-1">Estimated only — verify official notice</div>
     </div>
-    <div class="flex gap-2">
-      <a href="${e.officialLink}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
-        Apply Now ↗
-      </a>
+    <div class="flex gap-2 flex-wrap">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="window.showExamDetails('${escapeHtml(exam.id)}')">Details</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="window.toggleTrackedExam('${escapeHtml(exam.id)}')">${tracked ? '✓ Tracked' : '+ Track'}</button>
+      ${officialUrl ? `<a href="${escapeHtml(officialUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">Official site ↗</a>` : ''}
     </div>
   </div>
+</article>`;
+}
 
-  ${(e.alternativeLinks||[]).length > 0 ? `
-  <div style="padding:0.5rem 0.75rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;flex-wrap:wrap;">
-    ${e.alternativeLinks.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="text-xs text-accent">${l.label} ↗</a>`).join('')}
-  </div>` : ''}
-</div>`;
+function formatEligibility(eligibility = {}) {
+  const minClass = eligibility.minClass;
+  const stage = minClass === 'ug' ? 'Undergraduate / final-year degree level (check exam rules)' : minClass === 'grad' ? 'Graduation degree completed'
+    : minClass ? `Class ${minClass}` : 'Check official notification';
+  const parts = [`Minimum stage: ${stage}`];
+  if (eligibility.minAge) parts.push(`Minimum age: ${eligibility.minAge}`);
+  if (eligibility.maxAge) parts.push(`Maximum age: ${eligibility.maxAge}`);
+  if (eligibility.minPercent) parts.push(`Minimum marks: ${eligibility.minPercent}%`);
+  if (eligibility.subjects?.length) parts.push(`Subjects: ${eligibility.subjects.join(', ')}`);
+  if (eligibility.additionalCriteria) parts.push(eligibility.additionalCriteria);
+  return parts.join(' · ');
+}
+
+function getCurrentExams() {
+  return Array.isArray(window.__exams) ? window.__exams : [];
+}
+
+function refreshExams() {
+  const exams = getCurrentExams();
+  const { myExams, upcomingExams, trackedExams } = getExamLists(exams);
+  const content = document.getElementById('exams-content');
+  if (content) {
+    content.innerHTML = renderExamList(exams, myExams, upcomingExams, trackedExams);
+    // Newly rendered cards were added after the initial scroll-reveal observer ran.
+    content.querySelectorAll('.reveal').forEach((card) => card.classList.add('visible'));
+  }
+
+  document.querySelectorAll('.tab-btn').forEach((button) => {
+    const isActive = button.getAttribute('onclick')?.includes(`setExamTab('${activeTab}')`);
+    button.classList.toggle('active', Boolean(isActive));
+  });
+  document.querySelectorAll('.filter-chip').forEach((button) => {
+    button.classList.toggle('active', button.getAttribute('onclick')?.includes(`setExamFilter('${activeFilter}')`) || false);
+  });
 }
 
 window.setExamTab = (tab) => {
+  if (!['my', 'upcoming', 'tracked', 'all'].includes(tab)) return;
   activeTab = tab;
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent.toLowerCase().startsWith(tab === 'my' ? 'my' : tab === 'upcoming' ? 'up' : 'all'));
-  });
   refreshExams();
 };
 
-window.setExamFilter = (f) => {
-  activeFilter = f;
-  const filterMap = {
-    'all': 'All', 'entrance': 'Entrance', 'civil-services': 'Civil Services',
-    'govt-exam': 'Govt Exams', 'banking': 'Banking', 'scholarship-exam': 'Scholarships'
-  };
-  document.querySelectorAll('.filter-chip').forEach(el => {
-    el.classList.toggle('active', el.textContent.trim() === (filterMap[f] || f));
-  });
+window.setExamFilter = (filter) => {
+  if (!FILTERS.some(([key]) => key === filter)) return;
+  activeFilter = filter;
   refreshExams();
 };
 
-function refreshExams() {
-  const exams = window.__exams || [];
-  const profile = store.getProfile();
-  const myExams = exams.filter(e =>
-    (e.career||[]).includes(profile?.selectedCareer) &&
-    store.isStageEligible(profile?.class||'ug', e.eligibility?.minClass||'6')
-  );
-  const upcomingExams = exams.filter(e =>
-    (e.career||[]).includes(profile?.selectedCareer) &&
-    !store.isStageEligible(profile?.class||'ug', e.eligibility?.minClass||'6')
-  );
-  const content = document.getElementById('exams-content');
-  if (content) content.innerHTML = renderExamList(exams, myExams, upcomingExams);
-}
+window.toggleTrackedExam = (examId) => {
+  const exam = getCurrentExams().find((item) => item.id === examId);
+  if (!exam) return;
+  const modalWasOpen = Boolean(document.getElementById('active-modal-overlay'));
+  store.toggleTrackedExam(examId);
+  if (modalWasOpen) Modal.close();
+  refreshExams();
+  if (modalWasOpen) window.showExamDetails(examId);
+};
+
+window.showExamDetails = (examId) => {
+  const exam = getCurrentExams().find((item) => item.id === examId);
+  if (!exam) return;
+
+  const officialUrl = safeUrl(exam.officialLink);
+  const alternativeLinks = (exam.alternativeLinks || []).map((link) => {
+    const url = safeUrl(link.url);
+    return url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.label || 'Resource')} ↗</a>` : '';
+  }).filter(Boolean);
+  const topics = (exam.importantTopics || []).map((topic) => `<li>${escapeHtml(topic)}</li>`).join('');
+  const tracked = store.isExamTracked(exam.id);
+
+  Modal.open({
+    title: `${escapeHtml(exam.emoji || '📝')} ${escapeHtml(exam.title || 'Exam details')}`,
+    maxWidth: '680px',
+    content: `
+      <div class="space-y-4">
+        <p class="text-sm text-muted">${escapeHtml(exam.fullName || '')}</p>
+        <h4>Eligibility</h4>
+        <p>${escapeHtml(formatEligibility(exam.eligibility))}</p>
+        <h4>Exam pattern and syllabus</h4>
+        <p>${escapeHtml(exam.syllabus || 'Check the official notification for the current syllabus and exam pattern.')}</p>
+        <h4>Important topics</h4>
+        <ul>${topics || '<li>Check the official syllabus.</li>'}</ul>
+        <h4>Timeline (estimate only)</h4>
+        <p>Application window: ${escapeHtml(exam.applicationWindow?.approxMonth || 'Not announced')}${exam.applicationWindow?.approxEnd ? ` to ${escapeHtml(exam.applicationWindow.approxEnd)}` : ''}. Expected exam period: ${escapeHtml(exam.examMonth || 'Not announced')}.</p>
+        <p class="text-xs text-muted">These months may be outdated or change each year. Confirm current dates, eligibility, fees, and application status with the official notification.</p>
+        ${exam.statusNote ? `<p class="text-xs text-muted">${escapeHtml(exam.statusNote)}</p>` : ''}
+        <div class="flex gap-3 flex-wrap">
+          ${officialUrl ? `<a class="btn btn-primary btn-sm" href="${escapeHtml(officialUrl)}" target="_blank" rel="noopener noreferrer">Official website ↗</a>` : ''}
+          ${alternativeLinks.join(' ')}
+        </div>
+      </div>`,
+    actions: `<button type="button" class="btn btn-secondary" id="exam-modal-track">${tracked ? 'Remove from tracked' : 'Track this exam'}</button>`
+  });
+
+  document.getElementById('exam-modal-track')?.addEventListener('click', () => {
+    store.toggleTrackedExam(exam.id);
+    Modal.close();
+    refreshExams();
+  });
+};

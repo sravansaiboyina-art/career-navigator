@@ -13,7 +13,7 @@ export const env = {
   db: {
     type: metaEnv.VITE_DB_TYPE || 'indexeddb',
     name: metaEnv.VITE_DB_NAME || 'career_navigator_db',
-    version: parseInt(metaEnv.VITE_DB_VERSION || '1', 10),
+    version: parseInt(metaEnv.VITE_DB_VERSION || '2', 10),
   },
 
   demoSeed: metaEnv.VITE_DEMO_SEED === 'true',

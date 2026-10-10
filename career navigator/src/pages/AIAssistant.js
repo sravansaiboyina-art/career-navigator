@@ -1,13 +1,19 @@
 // pages/AIAssistant.js
 import { store } from '../store.js';
 import { gemini } from '../gemini.js';
-import { showToast } from '../main.js';
+import { showToast } from '../components/Toast.js';
 
 let messages = [];
 let isLoading = false;
+let activeProfileId = null;
 
 export function renderAIAssistant() {
   const profile = store.getProfile();
+  if ((profile?.id || null) !== activeProfileId) {
+    messages = [];
+    isLoading = false;
+    activeProfileId = profile?.id || null;
+  }
   const hasKey = !!store.getApiKey();
 
   return `
@@ -18,7 +24,7 @@ export function renderAIAssistant() {
       <div class="page-header-inner">
         <div>
           <h2>🤖 AI Career Assistant</h2>
-          <p class="mt-1">Powered by Google Gemini · Personalized for ${profile?.name || 'you'}</p>
+          <p class="mt-1">Career guidance · Personalized for ${escapeHtml(profile?.name || 'you')}</p>
         </div>
         <div class="flex gap-3 items-center">
           ${hasKey
@@ -67,7 +73,7 @@ export function renderAIAssistant() {
     <div class="modal-box" onclick="event.stopPropagation()">
       <div style="font-size:2.5rem;text-align:center;margin-bottom:1rem;">🔑</div>
       <h4 class="text-center mb-2">Google Gemini API Key</h4>
-      <p class="text-sm text-center mb-6">Your key is stored only in this browser session and never sent to any server.</p>
+      <p class="text-sm text-center mb-6">Your key is stored in this browser session and sent directly to Google’s Gemini API when you ask a question. Do not use a restricted production key here.</p>
       <div class="form-group mb-4">
         <label class="form-label">API Key</label>
         <input id="api-key-input" class="input" type="password" placeholder="AIza..." autocomplete="off" />
@@ -100,8 +106,8 @@ function renderWelcomeMessage(profile) {
   return `
   <div class="chat-bubble assistant animate-fade-up">
     <div style="font-size:1.5rem;margin-bottom:0.5rem;">👋</div>
-    <p><strong>Hi ${profile?.name || 'there'}!</strong> I'm your AI Career Assistant, powered by Google Gemini.</p>
-    <p>I'm personalized for your journey: <strong>${store.getStageLabel(profile?.class)}</strong> student interested in <strong>${profile?.selectedCareer?.replace('-',' ') || 'various career paths'}</strong>.</p>
+    <p><strong>Hi ${escapeHtml(profile?.name || 'there')}!</strong> I'm your AI Career Assistant, powered by Google Gemini.</p>
+    <p>I'm personalized for your journey: <strong>${escapeHtml(store.getStageLabel(profile?.class || ''))}</strong> student interested in <strong>${escapeHtml(profile?.selectedCareer?.replace('-',' ') || 'various career paths')}</strong>.</p>
     <p>I can help you with:</p>
     <ul>
       <li>Exam preparation strategies</li>
@@ -136,7 +142,8 @@ function renderSuggestedChips(profile) {
 }
 
 function formatMarkdown(text) {
-  return text
+  // Escape model output before adding the small subset of supported Markdown tags.
+  return escapeHtml(text)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/`(.+?)`/g, '<code>$1</code>')
@@ -149,8 +156,10 @@ function formatMarkdown(text) {
     .split('\n\n').map(p => p.startsWith('<') ? p : `<p>${p}</p>`).join('');
 }
 
-function escapeHtml(text) {
-  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function escapeHtml(value = '') {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[char]);
 }
 
 function scrollToBottom() {

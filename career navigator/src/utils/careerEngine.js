@@ -1,9 +1,9 @@
 import { store } from '../store.js';
+import { CAREER_ROADMAPS, mapClassToStage } from '../data/roadmapData.js';
 
 /**
- * Returns practical, stage-appropriate actions for the student's selected career.
- * Roadmap content remains the source of truth; this helper only selects the
- * current stage's incomplete milestones.
+ * Returns practical, stage-appropriate actions from the same roadmap source used
+ * by the Roadmap page, so dashboard actions and progress counts stay in sync.
  */
 export function getCurrentStageAdvice(profile, career) {
   const fallback = {
@@ -17,33 +17,24 @@ export function getCurrentStageAdvice(profile, career) {
 
   if (!profile || !career) return fallback;
 
-  const stage = String(profile.class || '');
-  const stageData = career.stages?.[stage];
-
-  if (!stageData) {
-    return {
-      title: 'Explore the next step in your journey',
-      actions: [
-        { title: 'Review the full career roadmap', priority: 'high' },
-        { title: 'Check the education and skills needed for this career', priority: 'medium' },
-        { title: 'Explore relevant exams and opportunities', priority: 'medium' }
-      ]
-    };
-  }
+  const roadmap = CAREER_ROADMAPS[career.id];
+  const stageId = mapClassToStage(String(profile.class || '11'));
+  const stageData = roadmap?.stages?.[stageId];
+  if (!stageData) return fallback;
 
   const progress = store.getProgress();
   const completedIds = new Set(progress.completedMilestones || []);
   const milestones = stageData.milestones || [];
-  const incomplete = milestones.filter(m => !completedIds.has(m.id));
+  const incomplete = milestones.filter(milestone => !completedIds.has(milestone.id));
 
   return {
     title: stageData.focus || 'Focus on your current education stage',
-    actions: (incomplete.length ? incomplete : milestones).slice(0, 3).map(m => ({
-      id: m.id,
-      title: m.title,
-      priority: m.priority || 'medium',
-      weeks: m.weeks,
-      completed: completedIds.has(m.id)
+    actions: (incomplete.length ? incomplete : milestones).slice(0, 3).map(milestone => ({
+      id: milestone.id,
+      title: milestone.title,
+      priority: milestone.priority || 'medium',
+      weeks: milestone.weeks,
+      completed: completedIds.has(milestone.id)
     }))
   };
 }

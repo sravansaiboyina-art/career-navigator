@@ -29,7 +29,7 @@ export const DEMO_USERS = [
       id: 'prog-neet-1',
       profileId: 'profile-neet-1',
       completedMilestones: ['m-med-11-1'],
-      savedOpportunities: ['opp-inspire', 'opp-kvpy'],
+      savedOpportunities: ['inspire-scholarship', 'pm-yasasvi'],
       notes: {
         'm-med-11-1': 'Completed NCERT Human Physiology unit. Revision scheduled for Sunday.'
       },
@@ -63,8 +63,8 @@ export const DEMO_USERS = [
     progress: {
       id: 'prog-jee-2',
       profileId: 'profile-jee-2',
-      completedMilestones: ['m-eng-12-1', 'm-eng-12-3'],
-      savedOpportunities: ['opp-google-stem'],
+      completedMilestones: ['m-eng-12-1', 'm-eng-12-2'],
+      savedOpportunities: ['google-step-internship', 'isro-internship'],
       notes: {},
       updatedAt: new Date().toISOString()
     }
@@ -97,7 +97,7 @@ export const DEMO_USERS = [
       id: 'prog-upsc-3',
       profileId: 'profile-upsc-3',
       completedMilestones: ['m-upsc-ug-1', 'm-upsc-ug-3'],
-      savedOpportunities: ['opp-pm-fellowship'],
+      savedOpportunities: ['central-sector-scholarship', 'fulbright-nehru'],
       notes: {},
       updatedAt: new Date().toISOString()
     }
@@ -129,8 +129,8 @@ export const DEMO_USERS = [
     progress: {
       id: 'prog-foundation-4',
       profileId: 'profile-foundation-4',
-      completedMilestones: ['m-iit-8-1'],
-      savedOpportunities: ['opp-ntse'],
+      completedMilestones: ['m-iit-f-1'],
+      savedOpportunities: ['ntse-scholarship'],
       notes: {},
       updatedAt: new Date().toISOString()
     }
@@ -164,7 +164,7 @@ export const DEMO_USERS = [
     progress: {
       id: 'prog-bank-5',
       profileId: 'profile-bank-5',
-      completedMilestones: ['m-bank-grad-1'],
+      completedMilestones: ['m-bank-gc-1'],
       savedOpportunities: [],
       notes: {},
       updatedAt: new Date().toISOString()

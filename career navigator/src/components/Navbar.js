@@ -1,6 +1,7 @@
 // src/components/Navbar.js — Reusable Navigation Bar
 import { store } from '../store.js';
 import { dbStatus } from '../db/config.js';
+import { escapeHtml } from '../utils/safeHtml.js';
 
 export function renderNavbar(activePath) {
   const profile = store.getProfile();
@@ -66,17 +67,17 @@ export function renderNavbar(activePath) {
             <div class="navbar-avatar flex items-center justify-center cursor-pointer" 
                  onclick="window.toggleUserMenu()" 
                  id="navbar-avatar-btn"
-                 title="${profile.name} (${stageLabel})">
+                 title="${escapeHtml(profile.name)} (${escapeHtml(stageLabel)})">
               ${initials}
             </div>
             
             <div class="user-menu-dropdown hidden" id="user-menu-dropdown">
               <div class="p-3 border-b border-border">
-                <div class="fw-700 text-sm">${profile.name}</div>
-                <div class="text-xs text-muted">${user?.email || 'student@career-navigator.in'}</div>
+                <div class="fw-700 text-sm">${escapeHtml(profile.name)}</div>
+                <div class="text-xs text-muted">${escapeHtml(user?.email || 'student@career-navigator.in')}</div>
                 <div class="mt-2 flex gap-1 flex-wrap">
                   <span class="badge badge-sm badge-violet">${stageLabel}</span>
-                  ${profile.stream !== 'na' ? `<span class="badge badge-sm badge-cyan">${profile.stream}</span>` : ''}
+                  ${profile.stream !== 'na' ? `<span class="badge badge-sm badge-cyan">${escapeHtml(profile.stream)}</span>` : ''}
                 </div>
               </div>
               <div class="p-2 flex-col gap-1">

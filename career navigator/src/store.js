@@ -6,21 +6,90 @@ const PROFILE_KEY = 'cn_profile';
 const PROGRESS_KEY = 'cn_progress';
 const USER_KEY = 'cn_user';
 
+const EMPTY_PROGRESS = {
+  completedMilestones: [],
+  savedOpportunities: [],
+  trackedExams: [],
+  notes: {}
+};
+
+function normalizeProgress(value = {}) {
+  const source = value && typeof value === 'object' ? value : {};
+  return {
+    ...EMPTY_PROGRESS,
+    ...source,
+    completedMilestones: Array.isArray(source.completedMilestones) ? [...new Set(source.completedMilestones)] : [],
+    savedOpportunities: Array.isArray(source.savedOpportunities) ? [...new Set(source.savedOpportunities)] : [],
+    trackedExams: Array.isArray(source.trackedExams) ? [...new Set(source.trackedExams)] : [],
+    notes: source.notes && typeof source.notes === 'object' && !Array.isArray(source.notes) ? source.notes : {}
+  };
+}
+
+function safeSessionUser(user) {
+  if (!user || typeof user !== 'object') return null;
+  const { id, name, email, role, createdAt } = user;
+  return { id, name, email, role: role || 'student', ...(createdAt ? { createdAt } : {}) };
+}
+
 export const store = {
   // ── Authentication / User Session ────────────────────
   getUser() {
     try {
       const raw = localStorage.getItem(USER_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const safeUser = safeSessionUser(parsed);
+      if (parsed?.password) localStorage.setItem(USER_KEY, JSON.stringify(safeUser));
+      return safeUser;
     } catch { return null; }
   },
 
   setUser(user) {
-    if (user) {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    const safeUser = safeSessionUser(user);
+    if (safeUser) {
+      localStorage.setItem(USER_KEY, JSON.stringify(safeUser));
     } else {
       localStorage.removeItem(USER_KEY);
     }
+    return safeUser;
+  },
+
+  // Replace the active browser session on login/signup/persona changes.
+  // This prevents fields from a previous student profile leaking into a new account.
+  replaceSession(user, profile, progress = {}) {
+    const safeUser = this.setUser(user);
+    const now = new Date().toISOString();
+    let safeProfile = null;
+
+    if (profile) {
+      safeProfile = {
+        ...profile,
+        id: profile.id || 'profile-' + (profile.userId || safeUser?.id || crypto.randomUUID()),
+        userId: profile.userId || safeUser?.id || null,
+        createdAt: profile.createdAt || now,
+        updatedAt: now
+      };
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(safeProfile));
+      db.put(COLLECTIONS.PROFILES, safeProfile).catch(err => {
+        console.warn('[Store] Could not persist profile to DB:', err);
+      });
+    } else {
+      localStorage.removeItem(PROFILE_KEY);
+    }
+
+    const safeProgress = normalizeProgress(progress);
+    if (safeProfile?.id) {
+      safeProgress.id = safeProgress.id || ('prog-' + safeProfile.id);
+      safeProgress.profileId = safeProfile.id;
+    }
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(safeProgress));
+    if (safeProfile?.id) {
+      db.put(COLLECTIONS.PROGRESS, safeProgress).catch(err => {
+        console.warn('[Store] Could not persist progress to DB:', err);
+      });
+    }
+
+    return { user: safeUser, profile: safeProfile, progress: safeProgress };
   },
 
   isAuthenticated() {
@@ -31,6 +100,8 @@ export const store = {
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(PROGRESS_KEY);
+    // API credentials are per-browser-session and must not carry into another student's session.
+    try { sessionStorage.removeItem('cn_gemini_key'); } catch { /* sessionStorage can be unavailable in hardened browsers */ }
   },
 
   // ── Profile ──────────────────────────────────────────
@@ -72,39 +143,27 @@ export const store = {
 
   // ── Progress ─────────────────────────────────────────
   getProgress() {
-  try {
-    const raw = localStorage.getItem(PROGRESS_KEY);
-    return raw
-      ? JSON.parse(raw)
-      : {
-          completedMilestones: [],
-          savedOpportunities: [],
-          trackedExams: [],
-          notes: {}
-        };
-  } catch {
-    return {
-      completedMilestones: [],
-      savedOpportunities: [],
-      trackedExams: [],
-      notes: {}
-    };
-  }
-},
+    try {
+      const raw = localStorage.getItem(PROGRESS_KEY);
+      return normalizeProgress(raw ? JSON.parse(raw) : {});
+    } catch {
+      return normalizeProgress();
+    }
+  },
 
   saveProgress(progress) {
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    const safeProgress = normalizeProgress(progress);
     const profile = this.getProfile();
     if (profile?.id) {
-      const record = {
-        ...progress,
-        id: progress.id || ('prog-' + profile.id),
-        profileId: profile.id
-      };
-      db.put(COLLECTIONS.PROGRESS, record)
+      safeProgress.id = safeProgress.id || ('prog-' + profile.id);
+      safeProgress.profileId = profile.id;
+    }
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(safeProgress));
+    if (profile?.id) {
+      db.put(COLLECTIONS.PROGRESS, safeProgress)
         .catch(err => console.warn('[Store] Failed to sync progress to DB:', err));
     }
-    return progress;
+    return safeProgress;
   },
 
   toggleMilestone(milestoneId) {
@@ -185,14 +244,13 @@ toggleTrackedExam(examId) {
     };
 
     const demo = map[personaKey] || DEMO_USERS[0];
-    this.setUser({
+    this.replaceSession({
       id: demo.id,
       name: demo.name,
       email: demo.email,
       role: demo.role,
-    });
-    this.saveProfile(demo.profile);
-    this.saveProgress(demo.progress);
+      createdAt: demo.createdAt
+    }, demo.profile, demo.progress);
     return demo;
   },
 
@@ -201,7 +259,7 @@ toggleTrackedExam(examId) {
     const map = {
       '6': 'Class 6', '7': 'Class 7', '8': 'Class 8',
       '9': 'Class 9', '10': 'Class 10', '11': 'Class 11',
-      '12': 'Class 12', 'ug': 'Undergraduate', 'grad': 'Postgraduate'
+      '12': 'Class 12', 'ug': 'Undergraduate', 'grad': 'Graduate'
     };
     return map[cls] || cls;
   },

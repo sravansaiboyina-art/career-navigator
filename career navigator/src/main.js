@@ -7,6 +7,7 @@ import './styles/components.css';
 import { router } from './router.js';
 import { store } from './store.js';
 import { db } from './db/index.js';
+import { dbStatus } from './db/config.js';
 import { env } from './config/env.js';
 import { showToast } from './components/Toast.js';
 export { showToast };
@@ -24,7 +25,7 @@ import { renderCareerDetail } from './pages/CareerDetail.js';
 import { renderRoadmap } from './pages/Roadmap.js';
 import { renderExams } from './pages/Exams.js';
 import { renderOpportunities } from './pages/Opportunities.js';
-import { renderProgress, initProgressChart } from './pages/Progress.js';
+import { renderProgress, initProgressChart, getProgressStageData } from './pages/Progress.js';
 import { renderAIAssistant } from './pages/AIAssistant.js';
 import { renderOpportunityDetail } from './pages/OpportunityDetail.js';
 
@@ -33,18 +34,51 @@ let careers = [];
 let exams = [];
 let opportunities = [];
 
+async function loadJsonDataset(file) {
+  const configuredBase = import.meta.env.BASE_URL || '/';
+  const base = configuredBase.endsWith('/') ? configuredBase : `${configuredBase}/`;
+  const response = await fetch(`${base}${file}`);
+  if (!response.ok) {
+    throw new Error(`Could not load ${file} (HTTP ${response.status}).`);
+  }
+
+  const data = await response.json();
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error(`${file} must contain a non-empty JSON array.`);
+  }
+  return data;
+}
+
 async function loadData() {
-  const [c, e, o] = await Promise.all([
-    fetch('/data/careers.json').then(r => r.json()),
-    fetch('/data/exams.json').then(r => r.json()),
-    fetch('/data/opportunities.json').then(r => r.json()),
+  const [loadedCareers, loadedExams, loadedOpportunities] = await Promise.all([
+    loadJsonDataset('data/careers.json'),
+    loadJsonDataset('data/exams.json'),
+    loadJsonDataset('data/opportunities.json')
   ]);
-  careers = c;
-  exams = e;
-  opportunities = o;
+
+  careers = loadedCareers;
+  exams = loadedExams;
+  opportunities = loadedOpportunities;
   window.__careers = careers;
   window.__exams = exams;
   window.__opportunities = opportunities;
+}
+
+function renderStartupError() {
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  app.innerHTML = `
+    <main class="container" style="min-height:100vh;display:grid;place-items:center;padding:2rem;">
+      <section class="card" style="max-width:620px;width:100%;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:1rem;">🧭</div>
+        <h1 class="font-heading" style="font-size:1.6rem;margin-bottom:0.75rem;">Career Navigator could not start</h1>
+        <p class="text-sm text-muted" style="line-height:1.7;">Some required application data or browser storage could not be initialized. Check your connection and browser storage settings, then try again.</p>
+        <button type="button" id="startup-retry" class="btn btn-primary mt-6">Try again</button>
+      </section>
+    </main>`;
+
+  document.getElementById('startup-retry')?.addEventListener('click', () => window.location.reload());
 }
 
 // ── Render Page with Layout ────────────────────────────────────
@@ -110,21 +144,28 @@ function setupRoutes() {
     '/opportunity'
   ];
   router.register('/opportunity', (path) => {
-    const opportunityId = path.replace('/opportunity/', '');
+    let opportunityId = '';
+    if (path.startsWith('/opportunity/')) {
+      try {
+        opportunityId = decodeURIComponent(path.slice('/opportunity/'.length));
+      } catch {
+        opportunityId = '';
+      }
+    }
+    const opportunity = opportunities.find((item) => item.id === opportunityId);
 
-    const opportunity = opportunities.find(
-      o => o.id === opportunityId
-    );
+    if (!opportunityId || !opportunity) {
+      setPage(renderOpportunityDetail(null), '/opportunity');
+      return;
+    }
 
-    setPage(
-      renderOpportunityDetail(opportunity),
-      '/opportunity/' + opportunityId
-    );
+    setPage(renderOpportunityDetail(opportunity), '/opportunity/' + encodeURIComponent(opportunityId));
   });
 
   router.before((path) => {
     // If accessing protected routes without a student profile, redirect to auth or onboarding
-    if (protectedRoutes.some(r => path.startsWith(r)) && !store.hasProfile()) {
+    const isProtected = protectedRoutes.some((routePath) => path === routePath || path.startsWith(routePath + '/'));
+    if (isProtected && !store.hasProfile()) {
       showToast('Please log in or create a profile to access this section.', 'info');
       router.navigate('/auth', true);
       return false;
@@ -137,7 +178,7 @@ function setupRoutes() {
       router.navigate('/dashboard', true);
       return;
     }
-    setPage(renderLanding(), '/');
+    setPage(renderLanding(careers, exams, opportunities), '/');
   });
 
   // Auth routes (Login & Signup)
@@ -175,9 +216,20 @@ function setupRoutes() {
 
   // Career Detail
   router.register('/career', (path) => {
-    const careerId = path.replace('/career/', '');
-    const career = careers.find(c => c.id === careerId) || careers[0];
-    setPage(renderCareerDetail(career, exams), '/career/' + (career?.id || ''));
+    let careerId = '';
+    if (path.startsWith('/career/')) {
+      try {
+        careerId = decodeURIComponent(path.slice('/career/'.length));
+      } catch {
+        careerId = '';
+      }
+    }
+    const career = careers.find((item) => item.id === careerId) || null;
+    if (!career) {
+      setPage(renderCareerDetail(null, exams), '/career');
+      return;
+    }
+    setPage(renderCareerDetail(career, exams), '/career/' + encodeURIComponent(career.id));
   });
 
   // Roadmap
@@ -197,19 +249,7 @@ function setupRoutes() {
 
   // Progress Tracker
   router.register('/progress', () => {
-    const profile = store.getProfile();
-    const career = careers.find(c => c.id === profile?.selectedCareer) || careers[0];
-    const progress = store.getProgress();
-    const stageData = Object.entries(career?.stages || {}).map(([stage, data]) => {
-      const milestones = data.milestones || [];
-      const completed = milestones.filter(m => progress.completedMilestones.includes(m.id)).length;
-      return {
-        stage,
-        label: stage === 'ug' ? 'UG' : stage === 'grad' ? 'PG' : `Cl.${stage}`,
-        total: milestones.length,
-        completed
-      };
-    });
+    const stageData = getProgressStageData(careers);
     setPage(renderProgress(careers), '/progress');
     setTimeout(() => initProgressChart(stageData), 100);
   });
@@ -229,26 +269,41 @@ function setupRoutes() {
 }
 
 // ── Scroll Reveal ─────────────────────────────────────────────
+let revealObserver = null;
+let navbarScrollHandler = null;
+
 function initScrollReveal() {
-  const obs = new IntersectionObserver((entries) => {
+  revealObserver?.disconnect();
+  revealObserver = new IntersectionObserver((entries) => {
     entries.forEach(e => {
       if (e.isIntersecting) {
         e.target.classList.add('visible');
-        obs.unobserve(e.target);
+        revealObserver?.unobserve(e.target);
       }
     });
   }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 }
 
 // ── Navbar Scroll Effect ───────────────────────────────────────
 function initNavbarScroll() {
+  if (navbarScrollHandler) {
+    window.removeEventListener('scroll', navbarScrollHandler);
+    navbarScrollHandler = null;
+  }
+
   const navbar = document.getElementById('navbar');
   if (!navbar) return;
-  const onScroll = () => navbar.classList.toggle('scrolled', window.scrollY > 20);
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+
+  // Query the active navbar on each scroll so route changes never leave stale DOM
+  // references behind, and replace the listener rather than accumulating handlers.
+  navbarScrollHandler = () => {
+    const activeNavbar = document.getElementById('navbar');
+    activeNavbar?.classList.toggle('scrolled', window.scrollY > 20);
+  };
+  window.addEventListener('scroll', navbarScrollHandler, { passive: true });
+  navbarScrollHandler();
 }
 
 // ── Global Navigation ──────────────────────────────────────────
@@ -276,18 +331,17 @@ async function boot() {
     </div>`;
 
   try {
-    // 1. Initialize Database connection & verify demo data
+    // Initialize browser storage and load the data required by the app.
     await db.connect();
-    if (env.debug) console.log(`[App] Database connected via ${env.db.type}`);
-
-    // 2. Load Static datasets
+    if (env.debug) console.log(`[App] Browser storage connected via ${dbStatus.driver}`);
     await loadData();
   } catch (err) {
-    console.error('Failed to initialize app:', err);
-    showToast('Failed to load application data. Please refresh.', 'error');
+    console.error('Failed to initialize Career Navigator:', err);
+    renderStartupError();
+    return;
   }
 
-  // 3. Register routes and start router
+  // Register routes only after their required datasets have loaded.
   setupRoutes();
   router.init();
 }

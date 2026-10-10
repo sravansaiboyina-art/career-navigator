@@ -1,6 +1,9 @@
 // pages/CareerDetail.js
 import { store } from '../store.js';
-import { showToast } from '../main.js';
+import { router } from '../router.js';
+import { showToast } from '../components/Toast.js';
+import { CAREER_ROADMAPS, ROADMAP_STAGES, mapClassToStage } from '../data/roadmapData.js';
+import { escapeHtml, safeHttpUrl } from '../utils/safeHtml.js';
 
 export function renderCareerDetail(career, exams) {
   if (!career) {
@@ -8,8 +11,9 @@ export function renderCareerDetail(career, exams) {
   }
 
   const profile = store.getProfile();
-  const stageOrder = ['6','7','8','9','10','11','12','ug','grad'];
-  const currentIdx = stageOrder.indexOf(profile?.class || '11');
+  const roadmap = CAREER_ROADMAPS[career.id];
+  const currentStageId = mapClassToStage(String(profile?.class || '11'));
+  const currentIdx = ROADMAP_STAGES.findIndex(stage => stage.id === currentStageId);
   const isSelected = profile?.selectedCareer === career.id;
 
   const careerExams = exams.filter(e => (e.career || []).includes(career.id));
@@ -30,7 +34,7 @@ export function renderCareerDetail(career, exams) {
         <div>
           <div style="font-size:3.5rem;line-height:1;margin-bottom:1rem;">${career.emoji}</div>
           <h1 style="font-size:2rem;margin-bottom:0.5rem;">${career.title}</h1>
-          <p style="font-size:1rem;color:rgba(255,255,255,0.8);max-width:560px;">${career.tagline}</p>
+          <p style="font-size:1rem;color:rgba(255,255,255,0.8);max-width:560px;">${escapeHtml(career.tagline || '')}</p>
           <div class="flex gap-3 flex-wrap mt-4">
             ${(career.tags||[]).slice(0,5).map(t => `<span class="badge badge-violet">${t}</span>`).join('')}
           </div>
@@ -50,7 +54,7 @@ export function renderCareerDetail(career, exams) {
         <!-- About -->
         <div class="card mb-6 reveal">
           <h4 class="mb-3">About This Career</h4>
-          <p class="text-sm" style="line-height:1.8;">${career.description}</p>
+          <p class="text-sm" style="line-height:1.8;">${escapeHtml(career.description || '')}</p>
           <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-top:1.5rem;">
             <div style="background:var(--bg-glass);border-radius:var(--radius-lg);padding:1rem;">
               <div class="text-xs text-muted mb-1">Average Salary</div>
@@ -58,7 +62,7 @@ export function renderCareerDetail(career, exams) {
             </div>
             <div style="background:var(--bg-glass);border-radius:var(--radius-lg);padding:1rem;">
               <div class="text-xs text-muted mb-1">Eligible From</div>
-              <div class="fw-700" style="font-size:0.875rem;">Class ${career.eligibleFromClass}+</div>
+              <div class="fw-700" style="font-size:0.875rem;">Class ${escapeHtml(career.eligibleFromClass || '')}+</div>
             </div>
           </div>
         </div>
@@ -70,20 +74,21 @@ export function renderCareerDetail(career, exams) {
             ${profile?.selectedCareer === career.id ? `<button class="btn btn-ghost btn-sm" onclick="window.navigateTo('/roadmap')">Full Roadmap →</button>` : ''}
           </div>
           <div class="roadmap-timeline">
-            ${Object.entries(career.stages || {}).map(([stage, data], i) => {
-              const stageIdx = stageOrder.indexOf(stage);
+            ${ROADMAP_STAGES.filter(stage => roadmap?.stages?.[stage.id]).map((stageMeta) => {
+              const data = roadmap.stages[stageMeta.id];
+              const stageIdx = ROADMAP_STAGES.findIndex(stage => stage.id === stageMeta.id);
               const stageClass = stageIdx < currentIdx ? 'past' : stageIdx === currentIdx ? 'current' : 'future';
               return `
               <div class="timeline-stage ${stageClass}">
                 <div class="timeline-stage-header">
                   <span class="badge ${stageClass==='current'?'badge-violet':stageClass==='past'?'badge-green':'badge-cyan'}">
-                    ${stage === 'ug' ? 'Undergraduate' : stage === 'grad' ? 'Postgraduate' : 'Class '+stage}
+                    ${escapeHtml(stageMeta.label)}
                   </span>
                   ${stageClass==='current' ? '<span class="badge badge-amber animate-pulse">You are here</span>' : ''}
                 </div>
                 <div class="card" style="background:${stageClass==='current'?'rgba(124,58,237,0.08)':stageClass==='past'?'rgba(16,185,129,0.04)':'var(--bg-glass)'};border-color:${stageClass==='current'?'rgba(124,58,237,0.3)':'var(--border)'};">
                   <div class="fw-600 text-sm mb-2" style="color:${stageClass==='current'?'var(--violet-light)':stageClass==='past'?'var(--green-light)':'var(--text-secondary)'}">
-                    ${stageClass==='past'?'✅ ':''}${data.focus}
+                    ${stageClass==='past'?'✅ ':''}${escapeHtml(data.focus || '')}
                   </div>
                   <div class="text-xs text-muted">${data.milestones?.length || 0} milestones</div>
                 </div>
@@ -96,7 +101,7 @@ export function renderCareerDetail(career, exams) {
         <div class="card reveal">
           <h4 class="mb-4">🏫 Top Institutions</h4>
           <div class="flex flex-wrap gap-2">
-            ${(career.topColleges||[]).map(c => `<span class="tag">${c}</span>`).join('')}
+            ${(career.topColleges||[]).map(c => `<span class="tag">${escapeHtml(c)}</span>`).join('')}
           </div>
         </div>
       </div>
@@ -110,17 +115,15 @@ export function renderCareerDetail(career, exams) {
             : careerExams.map(e => `
             <div class="mb-3 p-3" style="background:var(--bg-glass);border:1px solid var(--border);border-radius:var(--radius-lg);">
               <div class="flex items-center gap-2 mb-1">
-                <span style="font-size:1rem;">${e.emoji}</span>
-                <div class="fw-700 font-heading" style="font-size:0.85rem;">${e.title}</div>
+                <span style="font-size:1rem;">${escapeHtml(e.emoji || '📝')}</span>
+                <div class="fw-700 font-heading" style="font-size:0.85rem;">${escapeHtml(e.title || 'Exam')}</div>
               </div>
-              <div class="text-xs text-muted">${e.examMonth}</div>
+              <div class="text-xs text-muted">${escapeHtml(e.examMonth || 'Not announced')}</div>
               <div class="flex gap-2 mt-2">
-                <span class="badge badge-violet" style="font-size:0.6rem;">${e.difficulty}</span>
-                <span class="badge badge-cyan" style="font-size:0.6rem;">${e.frequency}</span>
+                <span class="badge badge-violet" style="font-size:0.6rem;">${escapeHtml(e.difficulty || 'Not specified')}</span>
+                <span class="badge badge-cyan" style="font-size:0.6rem;">${escapeHtml(e.frequency || 'Not specified')}</span>
               </div>
-              <a href="${e.officialLink}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm w-full mt-2" style="justify-content:center;font-size:0.75rem;">
-                Official Site ↗
-              </a>
+              ${safeHttpUrl(e.officialLink) ? `<a href="${escapeHtml(safeHttpUrl(e.officialLink))}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm w-full mt-2" style="justify-content:center;font-size:0.75rem;">Official Site ↗</a>` : ''}
             </div>`).join('')}
         </div>
 
