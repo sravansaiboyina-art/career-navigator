@@ -42,7 +42,7 @@ npm run build
 npm run preview
 ```
 
-GitHub Actions runs the audit tests and Vite build for changes under `career navigator/`.
+GitHub Actions runs the Node.js project-audit tests, Vite production build, and a Chromium browser smoke test for the main student flows when the app/workflow changes. The browser-test runtime is installed temporarily in CI and is not added to the app's production dependencies.
 
 ## Demo login
 
@@ -60,7 +60,8 @@ For local seed accounts, set `VITE_DEMO_SEED="true"` in `career navigator/.env` 
 - `career navigator/src/store.js`: active student session, profile, milestones, tracked exams, saved opportunities, and notes.
 - `career navigator/src/data/roadmapData.js`: canonical stage-based roadmap data.
 - `career navigator/data/` and `career navigator/public/data/`: career, exam, and opportunity JSON datasets. The audit tests confirm that the public copies match the source copies.
-- `career navigator/tests/project-audit.test.js`: automated route, data, storage, and project integrity checks.
+- `career navigator/tests/project-audit.test.js`: automated route, data, storage, authentication, and project integrity checks.
+- `career navigator/tests/e2e-smoke.mjs`: Chromium end-to-end smoke checks for login, onboarding/career selection, dashboard, roadmap/progress, exams, opportunities, AI offline mode, profile editing, invalid routes, and protected routes.
 
 ## AI configuration
 
@@ -73,4 +74,4 @@ The AI assistant works in offline demo mode without an API key. For a local expe
 3. Move Gemini requests to the backend; enforce quotas and keep API keys out of the browser.
 4. Add server-side validation, authorization, rate limiting, audit logging, and recovery workflows.
 5. Verify official exam/opportunity links and deadlines on a schedule; show a last-verified date and avoid implying live availability.
-6. Add real-browser end-to-end tests for registration, onboarding, protected routes, saved items, progress, and mobile navigation.
+6. Expand the current Chromium smoke test into cross-browser/device coverage, including full registration/login validation, mobile navigation, accessibility, and visual regression.
