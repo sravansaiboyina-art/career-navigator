@@ -350,3 +350,14 @@ test('switching student sessions replaces profile and progress instead of carryi
   assert.deepEqual(store.getProgress().notes, {});
   assert.equal('password' in store.getUser(), false);
 });
+
+test('demo persona saved opportunities all resolve to catalog records', async () => {
+  const { DEMO_USERS } = await import('../src/db/seed.js');
+  const opportunities = json('data/opportunities.json');
+  const ids = new Set(opportunities.map((opportunity) => opportunity.id));
+  for (const user of DEMO_USERS) {
+    for (const opportunityId of user.progress?.savedOpportunities || []) {
+      assert.ok(ids.has(opportunityId), `Demo user ${user.id} references missing opportunity ${opportunityId}`);
+    }
+  }
+});
