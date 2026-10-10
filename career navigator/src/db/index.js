@@ -42,6 +42,7 @@ async function verifyPassword(password, user) {
     const migrated = { ...user, ...hashed };
     delete migrated.password;
     await db.put(COLLECTIONS.USERS, migrated);
+    delete user.password;
     Object.assign(user, migrated);
     return true;
   }
@@ -316,7 +317,11 @@ class DatabaseService {
       await this.put(COLLECTIONS.PROFILES, profile);
       await this.put(COLLECTIONS.PROGRESS, progress);
     } catch (error) {
-      await this.delete(COLLECTIONS.USERS, userId).catch(() => {});
+      await Promise.all([
+        this.delete(COLLECTIONS.USERS, userId),
+        this.delete(COLLECTIONS.PROFILES, profile.id),
+        this.delete(COLLECTIONS.PROGRESS, progress.id)
+      ].map((operation) => operation.catch(() => {})));
       throw error;
     }
     return { user: publicUser(user), profile, progress };
