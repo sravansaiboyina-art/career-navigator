@@ -308,3 +308,13 @@ test('repeated route renders clean up scroll/reveal observers instead of accumul
   assert.ok(main.includes('window.removeEventListener(\'scroll\', navbarScrollHandler)'));
   assert.ok(main.includes('window.addEventListener(\'scroll\', navbarScrollHandler, { passive: true })'));
 });
+
+test('offline AI advice does not present stale numeric cutoffs or scholarship amounts as current facts', () => {
+  const gemini = read('src/gemini.js');
+  assert.ok(gemini.includes('does not have live cutoff data'));
+  assert.ok(gemini.includes('official previous-year opening/closing ranks'));
+  assert.ok(!gemini.includes('705+ / 720'));
+  assert.ok(!gemini.includes('99.2+ percentile'));
+  assert.ok(!gemini.includes('₹1,25,000/year'));
+  assert.ok(gemini.includes('API quota and terms'));
+});
