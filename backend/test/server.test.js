@@ -160,3 +160,58 @@ test('logout revokes the session and AI works without a browser-side API key', a
   const session = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: cookie } });
   assert.equal(session.status, 401);
 });
+
+test('password reset uses a generic request response, expires/revokes sessions, and replaces credentials', async (t) => {
+  let sentReset = null;
+  const { baseUrl } = await makeTestServer(t, {
+    sendPasswordResetEmail: async (message) => { sentReset = message; }
+  });
+  const created = await register(baseUrl);
+  const oldCookie = cookieFrom(created);
+
+  const requestReset = async (email) => fetch(`${baseUrl}/api/auth/password-reset/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+
+  const known = await requestReset('student@example.test');
+  const knownBody = await known.json();
+  assert.equal(known.status, 202);
+  assert.match(knownBody.message, /If an account matches that email/);
+  assert.ok(sentReset);
+  assert.equal(sentReset.email, 'student@example.test');
+  assert.match(sentReset.token, /^[A-Za-z0-9_-]{32,128}$/);
+  assert.equal(JSON.stringify(knownBody).includes(sentReset.token), false);
+
+  const unknown = await requestReset('unknown@example.test');
+  assert.equal(unknown.status, 202);
+  assert.deepEqual(await unknown.json(), knownBody);
+
+  const reset = await fetch(`${baseUrl}/api/auth/password-reset/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: sentReset.token, password: 'New-Strong-Password-456' })
+  });
+  assert.equal(reset.status, 200);
+  assert.match((await reset.json()).message, /Password updated/);
+  assert.equal((await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: oldCookie } })).status, 401);
+
+  const oldPassword = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'student@example.test', password: 'Strong-Password-123' })
+  });
+  assert.equal(oldPassword.status, 401);
+  const newPassword = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'student@example.test', password: 'New-Strong-Password-456' })
+  });
+  assert.equal(newPassword.status, 200);
+
+  const reused = await fetch(`${baseUrl}/api/auth/password-reset/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: sentReset.token, password: 'Another-Strong-Password-789' })
+  });
+  assert.equal(reused.status, 400);
+});
