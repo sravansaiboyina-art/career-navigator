@@ -290,3 +290,12 @@ test('unknown and malformed career/opportunity detail routes render safe not-fou
   assert.ok(main.includes("catch {\n        careerId = '';"));
   assert.ok(main.includes("catch {\n        opportunityId = '';"));
 });
+
+test('onboarding keeps future-stage careers available for younger students to explore', () => {
+  const onboarding = read('src/pages/Onboarding.js');
+  assert.ok(onboarding.includes('Career Matches to Explore'));
+  assert.ok(onboarding.includes('Keep future-stage careers visible so younger students can set long-term goals.'));
+  assert.ok(onboarding.includes('.sort((a,b) => b.score - a.score);'));
+  assert.ok(!onboarding.includes('.filter(c => c.score > -999)'));
+  assert.ok(!onboarding.includes('.slice(0, 5)'));
+});
