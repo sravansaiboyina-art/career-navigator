@@ -269,26 +269,41 @@ function setupRoutes() {
 }
 
 // ── Scroll Reveal ─────────────────────────────────────────────
+let revealObserver = null;
+let navbarScrollHandler = null;
+
 function initScrollReveal() {
-  const obs = new IntersectionObserver((entries) => {
+  revealObserver?.disconnect();
+  revealObserver = new IntersectionObserver((entries) => {
     entries.forEach(e => {
       if (e.isIntersecting) {
         e.target.classList.add('visible');
-        obs.unobserve(e.target);
+        revealObserver?.unobserve(e.target);
       }
     });
   }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 }
 
 // ── Navbar Scroll Effect ───────────────────────────────────────
 function initNavbarScroll() {
+  if (navbarScrollHandler) {
+    window.removeEventListener('scroll', navbarScrollHandler);
+    navbarScrollHandler = null;
+  }
+
   const navbar = document.getElementById('navbar');
   if (!navbar) return;
-  const onScroll = () => navbar.classList.toggle('scrolled', window.scrollY > 20);
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+
+  // Query the active navbar on each scroll so route changes never leave stale DOM
+  // references behind, and replace the listener rather than accumulating handlers.
+  navbarScrollHandler = () => {
+    const activeNavbar = document.getElementById('navbar');
+    activeNavbar?.classList.toggle('scrolled', window.scrollY > 20);
+  };
+  window.addEventListener('scroll', navbarScrollHandler, { passive: true });
+  navbarScrollHandler();
 }
 
 // ── Global Navigation ──────────────────────────────────────────
