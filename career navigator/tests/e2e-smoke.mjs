@@ -52,8 +52,45 @@ try {
   });
   await page.goto(`${baseUrl}/#/exams`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.location.hash === '#/auth');
+
+  // Exercise a fresh student's full onboarding flow in an isolated browser context.
+  const onboardingContext = await browser.newContext();
+  const onboardingPage = await onboardingContext.newPage();
+  const onboardingErrors = [];
+  onboardingPage.on('pageerror', (error) => onboardingErrors.push(error.message));
+  try {
+    await onboardingPage.goto(`${baseUrl}/#/onboarding`, { waitUntil: 'networkidle' });
+    await onboardingPage.locator('#ob-name').fill('E2E Student');
+    await onboardingPage.locator('#ob-class').selectOption('8');
+    await onboardingPage.locator('#ob-next-1').click();
+
+    await onboardingPage.locator('#interest-math').waitFor({ state: 'visible' });
+    await onboardingPage.locator('#interest-math').click();
+    await onboardingPage.locator('#interest-coding').click();
+    await onboardingPage.locator('#interest-technology').click();
+    await onboardingPage.getByRole('button', { name: /Find My Careers/ }).click();
+
+    await onboardingPage.locator('#career-select-list').waitFor({ state: 'visible' });
+    assert.equal(await onboardingPage.locator('#career-select-list .career-card').count(), 7,
+      'All supported careers should be available to a Class 8 student for long-term planning');
+    await onboardingPage.locator('#career-select-list .career-card')
+      .filter({ hasText: 'UPSC Civil Services' }).click();
+    await onboardingPage.locator('#finish-btn').click();
+    await onboardingPage.waitForFunction(() => window.location.hash === '#/dashboard');
+    await onboardingPage.locator('.dashboard-hero').waitFor({ state: 'visible' });
+
+    const newProfile = await onboardingPage.evaluate(() => JSON.parse(localStorage.getItem('cn_profile') || '{}'));
+    assert.equal(newProfile.name, 'E2E Student');
+    assert.equal(newProfile.class, '8');
+    assert.equal(newProfile.selectedCareer, 'upsc',
+      'Younger students must be able to choose a later-stage career goal');
+    assert.deepEqual(onboardingErrors, [], `Unexpected onboarding browser exceptions: ${onboardingErrors.join('; ')}`);
+  } finally {
+    await onboardingContext.close();
+  }
+
   assert.deepEqual(pageErrors, [], `Unexpected browser exceptions: ${pageErrors.join('; ')}`);
-  console.log('Browser smoke tests passed: login, dashboard, exam details/tracking persistence, career navigation, not-found route, and protected-route redirect.');
+  console.log('Browser smoke tests passed: demo login, onboarding, future-stage career selection, dashboard, roadmap/progress, exam tracking persistence, opportunity saving/details, profile editing, offline AI, not-found route, and protected-route redirect.');
 } finally {
   await context.close();
   await browser.close();
