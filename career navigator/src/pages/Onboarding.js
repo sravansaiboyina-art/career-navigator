@@ -127,8 +127,8 @@ function renderStep2() {
 function renderStep3() {
   const recommended = getCareerRecommendations();
   return `
-<h2 style="margin-bottom:0.5rem;">Your Top Career Matches</h2>
-<p class="text-sm mb-6">Based on your interests, here are the best paths for you. Pick one to start with.</p>
+<h2 style="margin-bottom:0.5rem;">Career Matches to Explore</h2>
+<p class="text-sm mb-6">Ranked by your interests, with future-stage careers included so you can plan ahead. Pick a path to start with.</p>
 
 <div class="flex-col gap-3" id="career-select-list">
   ${recommended.map((c,i) => `
@@ -165,19 +165,21 @@ function getCareerRecommendations() {
     .map(c => {
       let score = 0;
       const eligibleIdx = stageOrder.indexOf(String(c.eligibleFromClass));
-      if (studentIdx < eligibleIdx) return { ...c, score: -999 };
+
+      // Keep future-stage careers visible so younger students can set long-term goals.
+      // Use stage fit for ranking, not as a hard filter on exploration.
+      if (eligibleIdx >= 0 && studentIdx >= 0) {
+        score += studentIdx >= eligibleIdx ? 3 : -1;
+      }
+
       if (['11','12','ug','grad'].includes(formData.class) && formData.stream !== 'na') {
-        if (c.eligibleStreams && !c.eligibleStreams.includes(formData.stream) && formData.stream !== 'na') {
-          score -= 5;
-        }
+        if (c.eligibleStreams && !c.eligibleStreams.includes(formData.stream)) score -= 5;
       }
       (c.tags || []).forEach(tag => { if (formData.interests.includes(tag)) score += 10; });
       score += (c.popularityScore || 5) * 0.3;
       return { ...c, score };
     })
-    .filter(c => c.score > -999)
-    .sort((a,b) => b.score - a.score)
-    .slice(0, 5);
+    .sort((a,b) => b.score - a.score);
 }
 
 function getMatchScore(career) {
