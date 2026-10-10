@@ -45,6 +45,13 @@ export function createDatabase(databasePath = process.env.DATABASE_PATH || './da
     );
     CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      token_hash TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at INTEGER NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_password_reset_expiry ON password_reset_tokens(expires_at);
   `);
 
   const statements = {
@@ -62,7 +69,21 @@ export function createDatabase(databasePath = process.env.DATABASE_PATH || './da
     deleteSession: raw.prepare('DELETE FROM sessions WHERE token_hash = ?'),
     deleteExpiredSessions: raw.prepare('DELETE FROM sessions WHERE expires_at <= ?'),
     deleteSessionsForUser: raw.prepare('DELETE FROM sessions WHERE user_id = ?'),
+    insertResetToken: raw.prepare('INSERT INTO password_reset_tokens (token_hash,user_id,expires_at,created_at) VALUES (@tokenHash,@userId,@expiresAt,@createdAt)'),
+    deleteResetToken: raw.prepare('DELETE FROM password_reset_tokens WHERE token_hash = ?'),
+    deleteResetTokensForUser: raw.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?'),
+    deleteExpiredResetTokens: raw.prepare('DELETE FROM password_reset_tokens WHERE expires_at <= ?'),
   };
+
+  const completePasswordResetTransaction = raw.transaction(({ tokenHash, passwordHash, passwordSalt, now }) => {
+    const token = raw.prepare('SELECT user_id FROM password_reset_tokens WHERE token_hash = ? AND expires_at > ?').get(tokenHash, now);
+    if (!token) return null;
+    const result = raw.prepare('UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?').run(passwordHash, passwordSalt, token.user_id);
+    if (result.changes !== 1) return null;
+    statements.deleteSessionsForUser.run(token.user_id);
+    statements.deleteResetTokensForUser.run(token.user_id);
+    return token.user_id;
+  });
 
   const createAccountTransaction = raw.transaction(({ user, profile, progress }) => {
     statements.insertUser.run({
@@ -108,6 +129,15 @@ export function createDatabase(databasePath = process.env.DATABASE_PATH || './da
     },
     deleteSession(tokenHash) { statements.deleteSession.run(tokenHash); },
     deleteSessionsForUser(userId) { statements.deleteSessionsForUser.run(userId); },
+    createPasswordResetToken(token) {
+      statements.deleteExpiredResetTokens.run(Date.now());
+      statements.deleteResetTokensForUser.run(token.userId);
+      statements.insertResetToken.run(token);
+    },
+    deletePasswordResetToken(tokenHash) { statements.deleteResetToken.run(tokenHash); },
+    completePasswordReset(token) {
+      return completePasswordResetTransaction({ ...token, now: Date.now() });
+    },
     updateProfile(userId, profile) {
       const updatedAt = new Date().toISOString();
       const result = statements.upsertProfile.run({ userId, dataJson: JSON.stringify({ ...profile, updatedAt }), updatedAt });
