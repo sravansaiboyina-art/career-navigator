@@ -121,7 +121,15 @@ try {
   const onboardingErrors = [];
   onboardingPage.on('pageerror', (error) => onboardingErrors.push(error.message));
   try {
-    await onboardingPage.goto(`${baseUrl}/#/onboarding`, { waitUntil: 'networkidle' });
+    // Register a new account using the browser UI, then complete onboarding.
+    await onboardingPage.goto(`${baseUrl}/#/auth?mode=signup`, { waitUntil: 'networkidle' });
+    await onboardingPage.locator('#signup-name').fill('E2E Student');
+    await onboardingPage.locator('#signup-email').fill(`e2e-${Date.now()}@example.test`);
+    await onboardingPage.locator('#signup-class').selectOption('8');
+    await onboardingPage.locator('#signup-password').fill('Strong-Demo-Password-2026');
+    await onboardingPage.getByRole('button', { name: /Create Student Account/ }).click();
+    await onboardingPage.waitForFunction(() => window.location.hash === '#/onboarding');
+    await onboardingPage.locator('#ob-name').waitFor({ state: 'visible' });
     await onboardingPage.locator('#ob-name').fill('E2E Student');
     await onboardingPage.locator('#ob-class').selectOption('8');
     await onboardingPage.locator('#ob-next-1').click();
@@ -152,7 +160,7 @@ try {
   }
 
   assert.deepEqual(pageErrors, [], `Unexpected browser exceptions: ${pageErrors.join('; ')}`);
-  console.log('Browser smoke tests passed: demo login, onboarding, future-stage career selection, dashboard, roadmap/progress, exam tracking persistence, opportunity saving/details, profile editing, offline AI, not-found route, and protected-route redirect.');
+  console.log('Browser smoke tests passed: demo login, real account registration and onboarding, future-stage career selection, dashboard, roadmap/progress, exam tracking persistence, opportunity saving/details, profile editing, offline AI, not-found route, and protected-route redirect.');
 } finally {
   await context.close();
   await browser.close();
