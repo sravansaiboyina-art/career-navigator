@@ -361,3 +361,12 @@ test('demo persona saved opportunities all resolve to catalog records', async ()
     }
   }
 });
+
+test('IndexedDB schema version default is bumped to migrate newly declared indexes', () => {
+  const config = read('src/config/env.js');
+  const sampleEnv = read('.env.example');
+  assert.ok(config.includes("metaEnv.VITE_DB_VERSION || '2'"));
+  assert.ok(sampleEnv.includes('VITE_DB_VERSION="2"'));
+  const database = read('src/db/index.js');
+  assert.ok(database.includes('if (!objectStore.indexNames.contains(index.name))'));
+});
