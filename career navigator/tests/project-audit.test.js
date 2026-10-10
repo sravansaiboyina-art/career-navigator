@@ -106,7 +106,7 @@ test('all internal literal navigation targets are handled by the route table', (
     );
   });
   assert.deepEqual([...new Set(missing)], [], `Unregistered internal navigation targets: ${missing.join(', ')}`);
-  for (const route of ['/auth', '/login', '/signup', '/onboarding', '/dashboard', '/profile', '/explore', '/career', '/roadmap', '/exams', '/opportunities', '/opportunity', '/progress', '/assistant']) {
+  for (const route of ['/auth', '/login', '/signup', '/forgot-password', '/reset-password', '/onboarding', '/dashboard', '/profile', '/explore', '/career', '/roadmap', '/exams', '/opportunities', '/opportunity', '/progress', '/assistant']) {
     assert.ok(routes.includes(route), `Missing route ${route}`);
   }
 });
@@ -383,6 +383,8 @@ test('full-stack application contains a SQLite API and frontend adapter wired th
   assert.ok(backendPackage.includes('better-sqlite3'));
   assert.ok(server.includes("app.post('/api/auth/register'"));
   assert.ok(server.includes("app.post('/api/auth/login'"));
+  assert.ok(server.includes("app.post('/api/auth/password-reset/request'"));
+  assert.ok(server.includes("app.post('/api/auth/password-reset/confirm'"));
   assert.ok(server.includes("app.get('/api/auth/me'"));
   assert.ok(server.includes("app.put('/api/profile'"));
   assert.ok(server.includes("app.put('/api/progress'"));
@@ -404,4 +406,19 @@ test('authenticated browser profile/progress writes sync to the backend and AI u
   assert.ok(store.includes('api.updateProgress(safeProgress)'));
   assert.ok(main.includes('const account = await api.me()'));
   assert.ok(gemini.includes('const result = await api.chat(messages)'));
+});
+
+test('forgot/reset password pages and routes are wired to backend endpoints', () => {
+  const main = read('src/main.js');
+  const auth = read('src/pages/Auth.js');
+  const forgot = read('src/pages/ForgotPassword.js');
+  const reset = read('src/pages/ResetPassword.js');
+  const api = read('src/api/client.js');
+  assert.ok(main.includes("router.register('/forgot-password'"));
+  assert.ok(main.includes("router.register('/reset-password'"));
+  assert.ok(auth.includes("router.navigate('/forgot-password')"));
+  assert.ok(forgot.includes('api.requestPasswordReset(email)'));
+  assert.ok(reset.includes('api.resetPassword(token, password)'));
+  assert.ok(api.includes("request('/auth/password-reset/request'"));
+  assert.ok(api.includes("request('/auth/password-reset/confirm'"));
 });
