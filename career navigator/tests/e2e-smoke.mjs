@@ -178,13 +178,33 @@ try {
     await onboardingPage.locator('.dashboard-hero').waitFor({ state: 'visible' });
     const restoredProfile = await onboardingPage.evaluate(() => JSON.parse(localStorage.getItem('cn_profile') || '{}'));
     assert.equal(restoredProfile.selectedCareer, 'upsc', 'A reload must restore the profile from the server session');
+
+    // A UI milestone toggle should sync to SQLite and survive a second reload.
+    await onboardingPage.locator('.sidebar-link').filter({ hasText: 'Roadmap' }).click();
+    await onboardingPage.waitForFunction(() => window.location.hash === '#/roadmap');
+    await onboardingPage.locator('.stage-tab').filter({ hasText: 'Milestones' }).click();
+    const serverMilestone = onboardingPage.locator('[id^="milestone-v2-"]').first();
+    await serverMilestone.waitFor({ state: 'visible' });
+    const serverMilestoneId = (await serverMilestone.getAttribute('id')).replace(/^milestone-v2-/, '');
+    await serverMilestone.locator('.milestone-check-area').click();
+    await onboardingPage.waitForFunction(async (id) => {
+      const response = await fetch('/api/auth/me');
+      if (!response.ok) return false;
+      const account = await response.json();
+      return (account.progress.completedMilestones || []).includes(id);
+    }, serverMilestoneId, { timeout: 15000 });
+    await onboardingPage.reload({ waitUntil: 'networkidle' });
+    await onboardingPage.locator('.dashboard-hero').waitFor({ state: 'visible' });
+    const restoredProgress = await onboardingPage.evaluate(() => JSON.parse(localStorage.getItem('cn_progress') || '{}'));
+    assert.ok((restoredProgress.completedMilestones || []).includes(serverMilestoneId),
+      'Completed milestone should restore from the backend after a reload');
     assert.deepEqual(onboardingErrors, [], `Unexpected onboarding browser exceptions: ${onboardingErrors.join('; ')}`);
   } finally {
     await onboardingContext.close();
   }
 
   assert.deepEqual(pageErrors, [], `Unexpected browser exceptions: ${pageErrors.join('; ')}`);
-  console.log('Full-stack browser tests passed: demo login, server-backed registration/onboarding, SQLite session/profile restore, roadmap/progress, exam tracking persistence, opportunity saving/details, profile editing, offline AI, password-reset request UI, invalid reset/detail routes, and protected-route redirect.');
+  console.log('Full-stack browser tests passed: demo login, server-backed registration/onboarding, SQLite session/profile/progress restore, roadmap milestone sync, exam tracking persistence, opportunity saving/details, profile editing, offline AI, password-reset request UI, invalid reset/detail routes, and protected-route redirect.');
 } finally {
   await context.close();
   await browser.close();
