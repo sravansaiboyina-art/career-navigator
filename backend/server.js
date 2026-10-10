@@ -7,6 +7,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { createDatabase } from './database.js';
+import { createPasswordResetMailer } from './email.js';
 
 const scryptAsync = promisify(crypto.scrypt);
 const SESSION_COOKIE = 'cn_session';
@@ -91,7 +92,8 @@ export function createApp({
   geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash',
   sessionMaxAgeDays = Number(process.env.SESSION_MAX_AGE_DAYS || 7),
   nodeEnv = process.env.NODE_ENV || 'development',
-  frontendOrigins = (process.env.FRONTEND_ORIGIN || '').split(',').map((origin) => origin.trim()).filter(Boolean)
+  frontendOrigins = (process.env.FRONTEND_ORIGIN || '').split(',').map((origin) => origin.trim()).filter(Boolean),
+  sendPasswordResetEmail = createPasswordResetMailer(process.env)
 } = {}) {
   const app = express();
   const production = nodeEnv === 'production';
@@ -233,6 +235,61 @@ export function createApp({
   app.post('/api/auth/logout', (req, res) => {
     clearSession(req, res);
     res.status(204).end();
+  });
+
+  const genericResetMessage = 'If an account matches that email and password reset email is configured, reset instructions will be sent shortly.';
+
+  app.post('/api/auth/password-reset/request', authLimiter, async (req, res, next) => {
+    try {
+      const body = parseJsonObject(req.body) || {};
+      const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+      if (/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) && email.length <= 254 && sendPasswordResetEmail) {
+        const user = database.findUserByEmail(email);
+        if (user) {
+          const token = crypto.randomBytes(32).toString('base64url');
+          const tokenHash = sha256(token);
+          database.createPasswordResetToken({
+            tokenHash,
+            userId: user.id,
+            expiresAt: Date.now() + 30 * 60 * 1000,
+            createdAt: new Date().toISOString()
+          });
+          try {
+            await sendPasswordResetEmail({ email: user.email, name: user.name, token });
+          } catch (error) {
+            database.deletePasswordResetToken(tokenHash);
+            console.error('[API] Password reset email delivery failed:', error?.message || 'unknown mail error');
+            // Return the same generic response so email status is not exposed.
+          }
+        }
+      }
+      return res.status(202).json({ message: genericResetMessage });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post('/api/auth/password-reset/confirm', authLimiter, async (req, res, next) => {
+    try {
+      const body = parseJsonObject(req.body) || {};
+      const token = typeof body.token === 'string' ? body.token.trim() : '';
+      const password = body.password;
+      if (!/^[A-Za-z0-9_-]{32,128}$/.test(token)) return res.status(400).json({ error: 'This reset link is invalid or expired. Request a new one.' });
+      if (typeof password !== 'string' || password.length < 8 || password.length > MAX_PASSWORD_LENGTH) {
+        return res.status(400).json({ error: 'Password must be between 8 and 128 characters.' });
+      }
+      const passwordFields = await createPasswordHash(password);
+      const userId = database.completePasswordReset({
+        tokenHash: sha256(token),
+        passwordHash: passwordFields.passwordHash,
+        passwordSalt: passwordFields.passwordSalt
+      });
+      if (!userId) return res.status(400).json({ error: 'This reset link is invalid or expired. Request a new one.' });
+      res.setHeader('Set-Cookie', cookieHeader('', { secure: production, maxAgeSeconds: 0 }));
+      return res.json({ message: 'Password updated. Sign in using your new password.' });
+    } catch (error) {
+      next(error);
+    }
   });
 
   app.get('/api/profile', requireAuth, (req, res) => res.json({ profile: req.account.profile }));
