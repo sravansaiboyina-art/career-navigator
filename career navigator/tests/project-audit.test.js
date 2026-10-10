@@ -194,7 +194,7 @@ test('the prototype clearly documents local-only persistence and production limi
   const auth = read('src/pages/Auth.js');
   assert.match(readme, /browser|IndexedDB|localStorage/i);
   assert.match(readme, /production|server-side|backend/i);
-  assert.match(auth, /Password recovery is not configured yet/);
+  assert.match(auth, /Password reset works when backend SMTP delivery is configured/);
 });
 
 test('startup handles required data fetch failures with a retry screen', () => {
