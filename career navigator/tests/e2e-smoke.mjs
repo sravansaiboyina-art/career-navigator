@@ -194,7 +194,7 @@ try {
       return (account.progress.completedMilestones || []).includes(id);
     }, serverMilestoneId, { timeout: 15000 });
     await onboardingPage.reload({ waitUntil: 'networkidle' });
-    await onboardingPage.locator('.dashboard-hero').waitFor({ state: 'visible' });
+    await onboardingPage.locator('.roadmap-page').waitFor({ state: 'visible' });
     const restoredProgress = await onboardingPage.evaluate(() => JSON.parse(localStorage.getItem('cn_progress') || '{}'));
     assert.ok((restoredProgress.completedMilestones || []).includes(serverMilestoneId),
       'Completed milestone should restore from the backend after a reload');
