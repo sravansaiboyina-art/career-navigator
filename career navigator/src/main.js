@@ -144,9 +144,14 @@ function setupRoutes() {
     '/opportunity'
   ];
   router.register('/opportunity', (path) => {
-    const opportunityId = path.startsWith('/opportunity/')
-      ? decodeURIComponent(path.slice('/opportunity/'.length))
-      : '';
+    let opportunityId = '';
+    if (path.startsWith('/opportunity/')) {
+      try {
+        opportunityId = decodeURIComponent(path.slice('/opportunity/'.length));
+      } catch {
+        opportunityId = '';
+      }
+    }
     const opportunity = opportunities.find((item) => item.id === opportunityId);
 
     if (!opportunityId || !opportunity) {
@@ -211,9 +216,20 @@ function setupRoutes() {
 
   // Career Detail
   router.register('/career', (path) => {
-    const careerId = path.replace('/career/', '');
-    const career = careers.find(c => c.id === careerId) || careers[0];
-    setPage(renderCareerDetail(career, exams), '/career/' + (career?.id || ''));
+    let careerId = '';
+    if (path.startsWith('/career/')) {
+      try {
+        careerId = decodeURIComponent(path.slice('/career/'.length));
+      } catch {
+        careerId = '';
+      }
+    }
+    const career = careers.find((item) => item.id === careerId) || null;
+    if (!career) {
+      setPage(renderCareerDetail(null, exams), '/career');
+      return;
+    }
+    setPage(renderCareerDetail(career, exams), '/career/' + encodeURIComponent(career.id));
   });
 
   // Roadmap
