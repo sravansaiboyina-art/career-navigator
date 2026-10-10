@@ -194,7 +194,7 @@ test('the prototype clearly documents local-only persistence and production limi
   const auth = read('src/pages/Auth.js');
   assert.match(readme, /browser|IndexedDB|localStorage/i);
   assert.match(readme, /production|server-side|backend/i);
-  assert.match(auth, /Password recovery and production account security are not available yet/);
+  assert.match(auth, /Password recovery is not configured yet/);
 });
 
 test('startup handles required data fetch failures with a retry screen', () => {
@@ -369,4 +369,39 @@ test('IndexedDB schema version default is bumped to migrate newly declared index
   assert.ok(sampleEnv.includes('VITE_DB_VERSION="2"'));
   const database = read('src/db/index.js');
   assert.ok(database.includes('if (!objectStore.indexNames.contains(index.name))'));
+});
+
+test('full-stack application contains a SQLite API and frontend adapter wired through Vite', () => {
+  const rootPackage = read('../package.json');
+  const backendPackage = read('../backend/package.json');
+  const server = read('../backend/server.js');
+  const database = read('../backend/database.js');
+  const apiClient = read('src/api/client.js');
+  const vite = read('vite.config.js');
+  assert.ok(rootPackage.includes('"setup": "node scripts/setup.mjs"'));
+  assert.ok(rootPackage.includes('"dev": "node scripts/dev-fullstack.mjs"'));
+  assert.ok(backendPackage.includes('better-sqlite3'));
+  assert.ok(server.includes("app.post('/api/auth/register'"));
+  assert.ok(server.includes("app.post('/api/auth/login'"));
+  assert.ok(server.includes("app.get('/api/auth/me'"));
+  assert.ok(server.includes("app.put('/api/profile'"));
+  assert.ok(server.includes("app.put('/api/progress'"));
+  assert.ok(database.includes('CREATE TABLE IF NOT EXISTS sessions'));
+  assert.ok(database.includes('CREATE TABLE IF NOT EXISTS progress'));
+  assert.ok(apiClient.includes("request('/auth/register'"));
+  assert.ok(apiClient.includes("request('/auth/login'"));
+  assert.ok(vite.includes("target: process.env.CAREER_NAVIGATOR_API_TARGET || 'http://127.0.0.1:8787'"));
+});
+
+test('authenticated browser profile/progress writes sync to the backend and AI uses its proxy', () => {
+  const store = read('src/store.js');
+  const auth = read('src/pages/Auth.js');
+  const main = read('src/main.js');
+  const gemini = read('src/gemini.js');
+  assert.ok(auth.includes('api.register({ name, email, password, class: cls, stream })'));
+  assert.ok(auth.includes('api.login({ email, password })'));
+  assert.ok(store.includes('api.updateProfile(updated)'));
+  assert.ok(store.includes('api.updateProgress(safeProgress)'));
+  assert.ok(main.includes('const account = await api.me()'));
+  assert.ok(gemini.includes('const result = await api.chat(messages)'));
 });
