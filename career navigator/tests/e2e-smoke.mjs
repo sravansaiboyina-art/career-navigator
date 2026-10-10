@@ -33,7 +33,7 @@ try {
 
   // Tracking persists after a browser reload.
   await page.reload({ waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /Tracked/ }).click();
+  await page.locator('.tab-btn').filter({ hasText: 'Tracked' }).click();
   assert.equal(await page.locator('.exam-card').count(), 1, 'Tracked exam should persist after reload');
 
   // Sidebar navigation opens the career explorer; unknown career IDs show a not-found view.
