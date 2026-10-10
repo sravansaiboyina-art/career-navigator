@@ -106,6 +106,17 @@ try {
   await page.goto(`${baseUrl}/#/career/not-a-real-career`, { waitUntil: 'networkidle' });
   await page.getByRole('heading', { name: 'Career not found' }).waitFor({ state: 'visible' });
 
+  // Forgot-password UI calls the backend and does not reveal whether an account exists.
+  await page.goto(`${baseUrl}/#/auth`, { waitUntil: 'networkidle' });
+  await page.getByRole('link', { name: /Forgot password/ }).click();
+  await page.waitForFunction(() => window.location.hash === '#/forgot-password');
+  await page.locator('#forgot-password-email').fill('nonexistent@example.test');
+  await page.getByRole('button', { name: 'Send reset link' }).click();
+  await page.waitForFunction(() => document.querySelector('#forgot-password-result')?.innerText.includes('If an account matches that email'),
+    null, { timeout: 10000 });
+  await page.goto(`${baseUrl}/#/reset-password?token=malformed`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Request a new reset link' }).waitFor({ state: 'visible' });
+
   // Protected routes redirect to authentication when the profile/session is removed.
   await page.evaluate(() => {
     localStorage.removeItem('cn_profile');
@@ -173,7 +184,7 @@ try {
   }
 
   assert.deepEqual(pageErrors, [], `Unexpected browser exceptions: ${pageErrors.join('; ')}`);
-  console.log('Full-stack browser tests passed: demo login, server-backed account registration/onboarding, future-stage career selection, SQLite profile persistence across reloads, dashboard, roadmap/progress, exam tracking persistence, opportunity saving/details, profile editing, offline AI, not-found route, and protected-route redirect.');
+  console.log('Full-stack browser tests passed: demo login, server-backed registration/onboarding, SQLite session/profile restore, roadmap/progress, exam tracking persistence, opportunity saving/details, profile editing, offline AI, password-reset request UI, invalid reset/detail routes, and protected-route redirect.');
 } finally {
   await context.close();
   await browser.close();
