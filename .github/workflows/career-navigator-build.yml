@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - fix/exam-tracker-details
+      - feature/fullstack-backend
     paths:
       - "career navigator/**"
       - "backend/**"
