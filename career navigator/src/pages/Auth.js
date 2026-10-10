@@ -90,7 +90,7 @@ export function renderAuth(params = {}) {
         </div>
 
         <div class="auth-footer mt-6 text-center text-xs text-muted">
-          <span>With the backend running, accounts and progress are stored in a local SQLite database with server-managed sessions. Without it, the standalone browser demo uses local storage. Password recovery is not configured yet.</span>
+          <span>With the backend running, accounts and progress are stored in SQLite with server-managed sessions. Password reset works when backend SMTP delivery is configured. Without the backend, the standalone demo uses browser-local storage.</span>
         </div>
       </div>
     </div>
