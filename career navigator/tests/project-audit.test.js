@@ -299,3 +299,12 @@ test('onboarding keeps future-stage careers available for younger students to ex
   assert.ok(!onboarding.includes('.filter(c => c.score > -999)'));
   assert.ok(!onboarding.includes('.slice(0, 5)'));
 });
+
+test('repeated route renders clean up scroll/reveal observers instead of accumulating listeners', () => {
+  const main = read('src/main.js');
+  assert.ok(main.includes('let revealObserver = null;'));
+  assert.ok(main.includes('let navbarScrollHandler = null;'));
+  assert.ok(main.includes('revealObserver?.disconnect();'));
+  assert.ok(main.includes('window.removeEventListener(\'scroll\', navbarScrollHandler)'));
+  assert.ok(main.includes('window.addEventListener(\'scroll\', navbarScrollHandler, { passive: true })'));
+});
