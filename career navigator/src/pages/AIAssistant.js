@@ -14,7 +14,8 @@ export function renderAIAssistant() {
     isLoading = false;
     activeProfileId = profile?.id || null;
   }
-  const hasKey = !!store.getApiKey();
+  const serverManaged = store.isBackendSession();
+  const hasKey = !!store.getApiKey() || serverManaged;
 
   return `
 <div class="page-wrapper page-enter">
@@ -27,11 +28,13 @@ export function renderAIAssistant() {
           <p class="mt-1">Career guidance · Personalized for ${escapeHtml(profile?.name || 'you')}</p>
         </div>
         <div class="flex gap-3 items-center">
-          ${hasKey
-            ? `<span class="badge badge-green">● Gemini Live</span>
-               <button class="btn btn-ghost btn-sm" onclick="window.showApiKeyModal()">Change Key</button>`
-            : `<span class="badge badge-cyan">💡 Smart Counselor Mode</span>
-               <button class="btn btn-primary btn-sm" onclick="window.showApiKeyModal()">🔑 Add Live API Key</button>`}
+          ${serverManaged
+            ? `<span class="badge badge-green">● Server-managed AI</span>`
+            : hasKey
+              ? `<span class="badge badge-green">● Gemini Live</span>
+                 <button class="btn btn-ghost btn-sm" onclick="window.showApiKeyModal()">Change Key</button>`
+              : `<span class="badge badge-cyan">💡 Smart Counselor Mode</span>
+                 <button class="btn btn-primary btn-sm" onclick="window.showApiKeyModal()">🔑 Add Live API Key</button>`}
           <button class="btn btn-ghost btn-sm" onclick="window.clearChat()">🗑 Clear Chat</button>
         </div>
       </div>
@@ -73,7 +76,7 @@ export function renderAIAssistant() {
     <div class="modal-box" onclick="event.stopPropagation()">
       <div style="font-size:2.5rem;text-align:center;margin-bottom:1rem;">🔑</div>
       <h4 class="text-center mb-2">Google Gemini API Key</h4>
-      <p class="text-sm text-center mb-6">Your key is stored in this browser session and sent directly to Google’s Gemini API when you ask a question. Do not use a restricted production key here.</p>
+      <p class="text-sm text-center mb-6">${serverManaged ? 'Your signed-in session sends AI requests to the Career Navigator backend. The server reads GEMINI_API_KEY from its environment, so the secret is never entered or stored in this browser.' : 'For standalone demo mode, your key is stored in this browser session and sent directly to Google. For a deployed app, use the backend environment configuration instead.'}</p>
       <div class="form-group mb-4">
         <label class="form-label">API Key</label>
         <input id="api-key-input" class="input" type="password" placeholder="AIza..." autocomplete="off" />
@@ -106,7 +109,7 @@ function renderWelcomeMessage(profile) {
   return `
   <div class="chat-bubble assistant animate-fade-up">
     <div style="font-size:1.5rem;margin-bottom:0.5rem;">👋</div>
-    <p><strong>Hi ${escapeHtml(profile?.name || 'there')}!</strong> I'm your AI Career Assistant, powered by Google Gemini.</p>
+    <p><strong>Hi ${escapeHtml(profile?.name || 'there')}!</strong> I'm your AI Career Assistant. I can use the configured server AI service or provide offline demo guidance.</p>
     <p>I'm personalized for your journey: <strong>${escapeHtml(store.getStageLabel(profile?.class || ''))}</strong> student interested in <strong>${escapeHtml(profile?.selectedCareer?.replace('-',' ') || 'various career paths')}</strong>.</p>
     <p>I can help you with:</p>
     <ul>
