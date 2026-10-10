@@ -57,6 +57,12 @@ export const api = {
   logout() {
     return request('/auth/logout', { method: 'POST' });
   },
+  requestPasswordReset(email) {
+    return request('/auth/password-reset/request', { method: 'POST', body: { email } });
+  },
+  resetPassword(token, password) {
+    return request('/auth/password-reset/confirm', { method: 'POST', body: { token, password } });
+  },
   updateProfile(profile) {
     return request('/profile', { method: 'PUT', body: profile });
   },
