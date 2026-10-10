@@ -3,6 +3,7 @@ import { db } from '../db/index.js';
 import { store } from '../store.js';
 import { router } from '../router.js';
 import { showToast } from '../components/Toast.js';
+import { api } from '../api/client.js';
 
 let authMode = 'login'; // 'login' | 'signup'
 
@@ -89,7 +90,7 @@ export function renderAuth(params = {}) {
         </div>
 
         <div class="auth-footer mt-6 text-center text-xs text-muted">
-          <span>Demo prototype: account data is stored in this browser. Password recovery and production account security are not available yet.</span>
+          <span>With the backend running, accounts and progress are stored in SQLite with server-managed sessions. Password reset works when backend SMTP delivery is configured. Without the backend, the standalone demo uses browser-local storage.</span>
         </div>
       </div>
     </div>
@@ -201,7 +202,7 @@ if (typeof window !== 'undefined') {
   };
 
   window.showPasswordResetInfo = () => {
-    showToast('Password recovery is not part of this demo yet. Use a one-click demo persona or create a new account.', 'info');
+    router.navigate('/forgot-password');
   };
 
   window.togglePasswordVisibility = (inputId) => {
@@ -210,7 +211,11 @@ if (typeof window !== 'undefined') {
     input.type = input.type === 'password' ? 'text' : 'password';
   };
 
-  window.quickDemoLogin = (personaKey) => {
+  window.quickDemoLogin = async (personaKey) => {
+    if (store.isBackendSession()) {
+      await api.logout().catch(() => {});
+      store.setBackendSession(false);
+    }
     const persona = store.applyDemoPersona(personaKey);
     showToast(`Logged in as demo persona: ${persona.name} (${store.getStageLabel(persona.profile.class)}) 🚀`, 'success');
     router.navigate('/dashboard');
@@ -227,12 +232,16 @@ if (typeof window !== 'undefined') {
     }
 
     try {
-      const result = await db.authenticate(email, password);
+      const backendAvailable = await api.isAvailable();
+      const result = backendAvailable
+        ? await api.login({ email, password })
+        : await db.authenticate(email, password);
       if (!result) {
         showToast('Invalid email or password. Try one-click demo login or create a new account.', 'error');
         return;
       }
 
+      store.setBackendSession(backendAvailable);
       store.replaceSession(result.user, result.profile, result.progress);
 
       showToast(`Welcome back, ${result.user.name}! 👋`, 'success');
@@ -257,11 +266,15 @@ if (typeof window !== 'undefined') {
     }
 
     try {
-      const result = await db.register(
-        { name, email, password, role: 'student' },
-        { class: cls, stream: stream }
-      );
+      const backendAvailable = await api.isAvailable();
+      const result = backendAvailable
+        ? await api.register({ name, email, password, class: cls, stream })
+        : await db.register(
+            { name, email, password, role: 'student' },
+            { class: cls, stream }
+          );
 
+      store.setBackendSession(backendAvailable);
       store.replaceSession(result.user, result.profile, result.progress);
 
       showToast(`Account created successfully! Welcome, ${name}! 🎉`, 'success');

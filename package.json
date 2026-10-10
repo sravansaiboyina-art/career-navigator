@@ -1,0 +1,16 @@
+{
+  "name": "career-navigator-fullstack",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Full-stack career guidance app for students",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev": "node scripts/dev-fullstack.mjs",
+    "build": "npm run build --prefix "career navigator"",
+    "test": "node scripts/test-all.mjs"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

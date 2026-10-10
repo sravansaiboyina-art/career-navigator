@@ -5,14 +5,25 @@ on:
     branches:
       - main
       - fix/exam-tracker-details
+      - feature/fullstack-backend
     paths:
       - "career navigator/**"
+      - "backend/**"
+      - "scripts/**"
+      - "package.json"
+      - "README.md"
+      - ".gitignore"
       - ".github/workflows/career-navigator-build.yml"
   pull_request:
     branches:
       - main
     paths:
       - "career navigator/**"
+      - "backend/**"
+      - "scripts/**"
+      - "package.json"
+      - "README.md"
+      - ".gitignore"
       - ".github/workflows/career-navigator-build.yml"
 
 jobs:
@@ -30,8 +41,14 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: "career navigator/package-lock.json"
-      - name: Install dependencies
+      - name: Install frontend dependencies
         run: npm ci
+      - name: Install backend dependencies
+        run: npm install --prefix ../backend --no-audit --no-fund
+      - name: Audit backend dependencies
+        run: npm audit --prefix ../backend --audit-level=high
+      - name: Test backend API and SQLite persistence
+        run: npm test --prefix ../backend
       - name: Report dependency audit findings
         run: |
           npm audit --json > /tmp/npm-audit.json || true
@@ -46,14 +63,21 @@ jobs:
         run: npm install --no-save --no-package-lock playwright
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Run browser smoke tests
+      - name: Run full-stack browser smoke tests
+        env:
+          DATABASE_PATH: /tmp/career-navigator-e2e.sqlite
+          PORT: "8787"
+          HOST: 127.0.0.1
         run: |
+          npm run start --prefix ../backend > /tmp/career-navigator-api.log 2>&1 &
+          api_pid=$!
           npm run preview -- --host 127.0.0.1 > /tmp/career-navigator-preview.log 2>&1 &
           server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          trap 'kill "$server_pid" "$api_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 45); do
-            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            if curl -fsS http://127.0.0.1:8787/api/health >/dev/null && curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
             sleep 1
           done
+          curl -fsS http://127.0.0.1:8787/api/health >/dev/null || { cat /tmp/career-navigator-api.log; exit 1; }
           curl -fsS http://127.0.0.1:4173/ >/dev/null || { cat /tmp/career-navigator-preview.log; exit 1; }
           node tests/e2e-smoke.mjs

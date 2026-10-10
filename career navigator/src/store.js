@@ -1,10 +1,15 @@
 // src/store.js — Reactive Client State Manager with Database Sync
 import { db, COLLECTIONS } from './db/index.js';
 import { DEMO_USERS } from './db/seed.js';
+import { api } from './api/client.js';
 
 const PROFILE_KEY = 'cn_profile';
 const PROGRESS_KEY = 'cn_progress';
 const USER_KEY = 'cn_user';
+const SESSION_MODE_KEY = 'cn_session_mode';
+let backendSession = (() => {
+  try { return localStorage.getItem(SESSION_MODE_KEY) === 'backend'; } catch { return false; }
+})();
 
 const EMPTY_PROGRESS = {
   completedMilestones: [],
@@ -32,6 +37,18 @@ function safeSessionUser(user) {
 }
 
 export const store = {
+  setBackendSession(enabled) {
+    backendSession = Boolean(enabled);
+    try {
+      if (backendSession) localStorage.setItem(SESSION_MODE_KEY, 'backend');
+      else localStorage.removeItem(SESSION_MODE_KEY);
+    } catch { /* browser storage can be disabled */ }
+  },
+
+  isBackendSession() {
+    return backendSession;
+  },
+
   // ── Authentication / User Session ────────────────────
   getUser() {
     try {
@@ -97,6 +114,8 @@ export const store = {
   },
 
   logout() {
+    if (backendSession) api.logout().catch((error) => console.warn('[Store] Server logout could not be reached:', error));
+    this.setBackendSession(false);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(PROGRESS_KEY);
@@ -127,8 +146,13 @@ export const store = {
 
     // Also persist asynchronously to DB
     db.put(COLLECTIONS.PROFILES, updated).catch(err => {
-      console.warn('[Store] Could not persist profile to DB:', err);
+      console.warn('[Store] Could not persist profile to local DB:', err);
     });
+    if (backendSession) {
+      api.updateProfile(updated).catch(err => {
+        console.warn('[Store] Profile could not sync to the server; the local copy was kept:', err);
+      });
+    }
 
     return updated;
   },
@@ -161,7 +185,12 @@ export const store = {
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(safeProgress));
     if (profile?.id) {
       db.put(COLLECTIONS.PROGRESS, safeProgress)
-        .catch(err => console.warn('[Store] Failed to sync progress to DB:', err));
+        .catch(err => console.warn('[Store] Failed to persist progress to local DB:', err));
+      if (backendSession) {
+        api.updateProgress(safeProgress).catch(err => {
+          console.warn('[Store] Progress could not sync to the server; the local copy was kept:', err);
+        });
+      }
     }
     return safeProgress;
   },

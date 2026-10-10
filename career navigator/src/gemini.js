@@ -1,6 +1,7 @@
 // gemini.js — Google Gemini API client
 
 import { store } from './store.js';
+import { api } from './api/client.js';
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
 const GEMINI_STREAM_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:streamGenerateContent';
@@ -31,6 +32,16 @@ Your role:
 
 export const gemini = {
   async chat(messages, profile = null, onToken = null) {
+    // Authenticated full-stack sessions use the server proxy so the Gemini key never reaches the browser.
+    if (store.isBackendSession()) {
+      const result = await api.chat(messages);
+      if (result.configured && result.text) {
+        if (onToken) onToken(result.text, result.text);
+        return result.text;
+      }
+      return generateOfflineAdvice(messages, profile, onToken);
+    }
+
     const apiKey = store.getApiKey();
     if (!apiKey) {
       return generateOfflineAdvice(messages, profile, onToken);
