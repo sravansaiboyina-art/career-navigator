@@ -221,7 +221,9 @@ test('new accounts initialize independent progress records and login returns no 
   assert.ok(database.includes('return { user: publicUser(user), profile, progress }'));
   assert.ok(database.includes('profileId: profile.id'));
   assert.ok(database.includes('trackedExams: []'));
-  assert.ok(database.includes('await this.delete(COLLECTIONS.USERS, userId).catch'));
+  assert.ok(database.includes('this.delete(COLLECTIONS.USERS, userId)'));
+  assert.ok(database.includes('this.delete(COLLECTIONS.PROFILES, profile.id)'));
+  assert.ok(database.includes('this.delete(COLLECTIONS.PROGRESS, progress.id)'));
   assert.ok(database.includes('Object.assign(user, migrated)'));
 });
 
