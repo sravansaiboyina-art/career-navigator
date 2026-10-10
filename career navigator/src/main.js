@@ -6,6 +6,7 @@ import './styles/components.css';
 
 import { router } from './router.js';
 import { store } from './store.js';
+import { api } from './api/client.js';
 import { db } from './db/index.js';
 import { dbStatus } from './db/config.js';
 import { env } from './config/env.js';
@@ -333,8 +334,24 @@ async function boot() {
   try {
     // Initialize browser storage and load the data required by the app.
     await db.connect();
-    if (env.debug) console.log(`[App] Browser storage connected via ${dbStatus.driver}`);
+    if (env.debug) console.log(`[App] Browser cache connected via ${dbStatus.driver}`);
     await loadData();
+
+    // When the API is configured, restore the authoritative server session.
+    // Static/demo hosting remains usable through the local browser-only fallback.
+    if (await api.isAvailable()) {
+      try {
+        const account = await api.me();
+        store.setBackendSession(true);
+        store.replaceSession(account.user, account.profile, account.progress);
+      } catch (error) {
+        if (store.isBackendSession()) store.logout();
+        else store.setBackendSession(false);
+        if (env.debug && error) console.info('[App] No active server session; continuing to the sign-in screen or local demo.');
+      }
+    } else {
+      store.setBackendSession(false);
+    }
   } catch (err) {
     console.error('Failed to initialize Career Navigator:', err);
     renderStartupError();
