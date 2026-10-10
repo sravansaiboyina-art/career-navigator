@@ -41,6 +41,68 @@ try {
   await page.waitForFunction(() => window.location.hash === '#/explore');
   await page.getByRole('heading', { name: /Explore Career Pathways/ }).waitFor({ state: 'visible' });
 
+  // Roadmap milestones update the same persistent state used by Progress.
+  await page.locator('.sidebar-link').filter({ hasText: 'Roadmap' }).click();
+  await page.waitForFunction(() => window.location.hash === '#/roadmap');
+  await page.locator('.stage-tab').filter({ hasText: 'Milestones' }).click();
+  const milestoneCard = page.locator('[id^="milestone-v2-"]').first();
+  await milestoneCard.waitFor({ state: 'visible' });
+  const milestoneId = (await milestoneCard.getAttribute('id')).replace(/^milestone-v2-/, '');
+  const beforeMilestone = await page.evaluate((id) => {
+    const progress = JSON.parse(localStorage.getItem('cn_progress') || '{}');
+    return (progress.completedMilestones || []).includes(id);
+  }, milestoneId);
+  await milestoneCard.locator('.milestone-check-area').click();
+  const afterMilestone = await page.evaluate((id) => {
+    const progress = JSON.parse(localStorage.getItem('cn_progress') || '{}');
+    return (progress.completedMilestones || []).includes(id);
+  }, milestoneId);
+  assert.equal(afterMilestone, !beforeMilestone, 'Roadmap milestone click should persist the completion toggle');
+
+  await page.locator('.sidebar-link').filter({ hasText: 'Progress & Stats' }).click();
+  await page.waitForFunction(() => window.location.hash === '#/progress');
+  await page.getByRole('heading', { name: /My Progress/ }).waitFor({ state: 'visible' });
+  await page.locator('#progress-chart').waitFor({ state: 'attached' });
+
+  // Opportunity save state works on both the list and detail page.
+  await page.locator('.sidebar-link').filter({ hasText: 'Opportunities' }).click();
+  await page.waitForFunction(() => window.location.hash === '#/opportunities');
+  const opportunityCard = page.locator('.opp-card').first();
+  const listSaveButton = opportunityCard.locator('.save-btn');
+  const savedBefore = await listSaveButton.getAttribute('aria-pressed');
+  await listSaveButton.click();
+  assert.notEqual(await listSaveButton.getAttribute('aria-pressed'), savedBefore,
+    'Save button should toggle the saved state');
+
+  await opportunityCard.getByRole('button', { name: 'Details' }).click();
+  await page.waitForFunction(() => window.location.hash.startsWith('#/opportunity/'));
+  const detailSaveButton = page.locator('#opportunity-detail-save');
+  const detailSavedBefore = await detailSaveButton.innerText();
+  await detailSaveButton.click();
+  assert.notEqual(await detailSaveButton.innerText(), detailSavedBefore,
+    'Opportunity detail save button should toggle saved state');
+  await page.getByRole('button', { name: /Back to Opportunities/ }).click();
+  await page.waitForFunction(() => window.location.hash === '#/opportunities');
+  await page.locator('.tab-btn').filter({ hasText: 'Saved' }).click();
+  assert.ok(await page.locator('.opp-card').count() > 0, 'Saved opportunities should be visible in the Saved tab');
+
+  // The assistant remains usable in offline demo mode without a user-supplied key.
+  await page.locator('.sidebar-link').filter({ hasText: 'AI Assistant' }).click();
+  await page.waitForFunction(() => window.location.hash === '#/assistant');
+  await page.locator('#chat-input').fill('How should I plan my studies?');
+  await page.locator('#send-btn').click();
+  await page.waitForFunction(() => document.querySelector('#chat-messages')?.innerText.includes('Action Strategy'),
+    { timeout: 15000 });
+
+  // Profile editing saves to the active student record.
+  await page.locator('.sidebar-link').filter({ hasText: 'Student Profile' }).click();
+  await page.waitForFunction(() => window.location.hash === '#/profile');
+  await page.getByRole('button', { name: /Edit Profile/ }).click();
+  await page.locator('#edit-name').fill('Priya E2E');
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+  await page.getByRole('heading', { name: 'Priya E2E' }).waitFor({ state: 'visible' });
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('cn_profile') || '{}').name), 'Priya E2E');
+
   await page.goto(`${baseUrl}/#/career/not-a-real-career`, { waitUntil: 'networkidle' });
   await page.getByRole('heading', { name: 'Career not found' }).waitFor({ state: 'visible' });
 
