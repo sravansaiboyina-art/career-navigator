@@ -241,7 +241,7 @@ if (typeof window !== 'undefined') {
         return;
       }
 
-      store.setBackendSession(await api.isAvailable());
+      store.setBackendSession(backendAvailable);
       store.replaceSession(result.user, result.profile, result.progress);
 
       showToast(`Welcome back, ${result.user.name}! 👋`, 'success');
