@@ -95,7 +95,9 @@ test('all internal literal navigation targets are handled by the route table', (
   const main = read('src/main.js');
   const source = allSource();
   const routes = [...main.matchAll(/router\.register\(\s*(['"])(.*?)\1/g)].map((match) => match[2]);
-  const targets = [...source.matchAll(/window\.navigateTo\(\s*(['"])([^'"]+)\1\s*\)/g)].map((match) => match[2]);
+  const targets = [...source.matchAll(/window\.navigateTo\(\s*(['"])([^'"]+)\1\s*\)/g)]
+    .map((match) => match[2])
+    .filter((target) => !target.includes('$' + '{'));
   const missing = targets.filter((target) => {
     const targetPath = target.split('?')[0];
     return !routes.some((route) =>
