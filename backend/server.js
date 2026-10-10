@@ -255,11 +255,15 @@ export function createApp({
             createdAt: new Date().toISOString()
           });
           try {
-            await sendPasswordResetEmail({ email: user.email, name: user.name, token });
+            const delivery = sendPasswordResetEmail({ email: user.email, name: user.name, token });
+            // Do not wait for SMTP: response time must not disclose whether an email exists.
+            Promise.resolve(delivery).catch((error) => {
+              database.deletePasswordResetToken(tokenHash);
+              console.error('[API] Password reset email delivery failed:', error?.message || 'unknown mail error');
+            });
           } catch (error) {
             database.deletePasswordResetToken(tokenHash);
             console.error('[API] Password reset email delivery failed:', error?.message || 'unknown mail error');
-            // Return the same generic response so email status is not exposed.
           }
         }
       }
